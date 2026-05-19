@@ -1,0 +1,9 @@
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 6px #1DFF6F; }
+  50%       { opacity: 0.35; box-shadow: none; }
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

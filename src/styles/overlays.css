@@ -1,0 +1,39 @@
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(29,255,111,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(29,255,111,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,255,80,0.025) 2px,
+    rgba(0,255,80,0.025) 4px
+  );
+  pointer-events: none;
+  z-index: 50;
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.75) 100%);
+  pointer-events: none;
+  z-index: 40;
+}
+
+.radar-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 20;
+}

@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --c-bg:        #07090C;
+  --c-panel:     #0D1117;
+  --c-border:    #1A2A1A;
+  --c-green:     #1DFF6F;
+  --c-green-dim: #0A4020;
+  --c-amber:     #FFB300;
+  --c-amber-dim: #7A5500;
+  --c-cyan:      #00E5FF;
+  --c-text:      #C8D0C8;
+  --c-text-dim:  #3A4A3A;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+#root {
+  height: 100%;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: #07090C; }
+::-webkit-scrollbar-thumb { background: #1A2A1A; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #1DFF6F44; }

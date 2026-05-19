@@ -1,0 +1,116 @@
+.main-content {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  padding-top: 44px;
+  pointer-events: none; /* re-enabled per-child below */
+}
+
+.main-top {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 36px;
+  width: 100%;
+}
+
+.signal-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--c-green);
+  margin-bottom: 18px;
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+
+.name-block {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  line-height: 1.0;
+  text-align: center;
+}
+
+.name-line {
+  font-size: clamp(52px, 9vw, 120px);
+  color: #E8F0E8;
+  letter-spacing: -0.02em;
+}
+
+.name-bracket {
+  color: var(--c-amber);
+}
+
+.subtitle {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--c-text-dim);
+  letter-spacing: 0.12em;
+  margin-top: 18px;
+  transition: opacity 1s ease 0.5s;
+}
+
+.hero-divider {
+  width: min(640px, 80vw);
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--c-border), transparent);
+  transition: opacity 0.8s ease 0.4s;
+}
+
+.main-bottom {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 36px;
+  width: 100%;
+  gap: 20px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.status-badge {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: var(--c-green);
+  border: 1px solid var(--c-green-dim);
+  padding: 6px 18px;
+  border-radius: 3px;
+  letter-spacing: 0.12em;
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: opacity 0.8s ease 0.6s;
+}
+
+.pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-green);
+  box-shadow: 0 0 6px var(--c-green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.cursor-block {
+  display: inline-block;
+  width: 0.07em;
+  height: 0.85em;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: background 0.1s;
+}
