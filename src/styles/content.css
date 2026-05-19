@@ -55,12 +55,6 @@
   transition: opacity 1s ease 0.5s;
 }
 
-.hero-divider {
-  width: min(640px, 80vw);
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--c-border), transparent);
-  transition: opacity 0.8s ease 0.4s;
-}
 
 .main-bottom {
   flex: 1;
@@ -79,31 +73,6 @@
   flex-wrap: wrap;
   justify-content: center;
   pointer-events: auto;
-}
-
-.status-badge {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--c-green);
-  border: 1px solid var(--c-green-dim);
-  padding: 6px 18px;
-  border-radius: 3px;
-  letter-spacing: 0.12em;
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: opacity 0.8s ease 0.6s;
-}
-
-.pulse-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--c-green);
-  box-shadow: 0 0 6px var(--c-green);
-  animation: pulse 2s ease-in-out infinite;
 }
 
 .cursor-block {

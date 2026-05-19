@@ -6,7 +6,6 @@ import './styles/overlays.css'
 import './styles/topbar.css'
 import './styles/content.css'
 import './styles/sections.css'
-import './styles/statusbar.css'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(

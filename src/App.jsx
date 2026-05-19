@@ -12,7 +12,6 @@
 //   │   ├── Cursor       — blinking terminal cursor
 //   │   └── PulseDot     — animated green status dot
 //   ├── RadarCanvas      — full-screen radar (runs forever; wipes on nav)
-//   ├── StatusBar        — bottom fixed bar with live readouts
 //   ├── SectionResume    — fixed full-screen overlay, revealed by radar
 //   ├── SectionPortfolio — fixed full-screen overlay
 //   └── SectionAlbum     — fixed full-screen overlay
@@ -91,10 +90,6 @@ function RadarCanvas({ angle, revealed }) {
       ctx.arc(cx, cy, r, 0, TWO_PI);
       ctx.stroke();
     }
-    ctx.beginPath();
-    ctx.moveTo(0, cy); ctx.lineTo(W, cy);
-    ctx.moveTo(cx, 0); ctx.lineTo(cx, H);
-    ctx.stroke();
     ctx.restore();
 
     // ── Step 2: Sweep trail (phosphor afterglow) ──
@@ -301,9 +296,12 @@ function MainContent({ revealed, angle, hidden, onNav }) {
   const topVisible  = revealed > 0.30;
   const btnsVisible = revealed > 0.72;
 
-  // Phosphor glow when sweep passes each element's angular position
-  const titleBr = sweepBrightness(angle, -Math.PI / 2); // 12 o'clock
-  const btnsBr  = sweepBrightness(angle,  Math.PI / 2); // 6 o'clock
+  // Phosphor glow when sweep passes each element's angular position.
+  // Buttons use offset angles so each one lights up at a slightly different time.
+  const titleBr    = sweepBrightness(angle, -Math.PI / 2);       // 12 o'clock
+  const albumBr    = sweepBrightness(angle,  Math.PI / 2 - 1); // hits first (right)
+  const portfolioBr= sweepBrightness(angle,  Math.PI / 2);       // hits second (center)
+  const resumeBr   = sweepBrightness(angle,  Math.PI / 2 + 1); // hits third (left)
 
   const nameGlow = topVisible && titleBr > 0.04
     ? `0 0 ${30 * titleBr}px rgba(29,255,111,${titleBr * 0.7})`
@@ -369,30 +367,20 @@ function MainContent({ revealed, angle, hidden, onNav }) {
 
       </div>
 
-      {/* ── DIVIDER ── */}
-      <div className="hero-divider" style={{ opacity: topVisible ? 1 : 0 }} />
 
       {/* ── BOTTOM HALF ── */}
       <div className="main-bottom">
 
         <div className="btn-row">
-          <NavButton delay={0.00} visible={btnsVisible} glow={btnsBr} onClick={() => onNav("resume")}>
+          <NavButton delay={0.00} visible={btnsVisible} glow={resumeBr}    onClick={() => onNav("resume")}>
             ↓ RESUME
           </NavButton>
-          <NavButton delay={0.12} visible={btnsVisible} glow={btnsBr} onClick={() => onNav("portfolio")}>
+          <NavButton delay={0.12} visible={btnsVisible} glow={portfolioBr} onClick={() => onNav("portfolio")}>
             ⌥ PORTFOLIO
           </NavButton>
-          <NavButton delay={0.24} visible={btnsVisible} glow={btnsBr} onClick={() => onNav("album")}>
+          <NavButton delay={0.24} visible={btnsVisible} glow={albumBr}     onClick={() => onNav("album")}>
             ◈ ALBUM
           </NavButton>
-        </div>
-
-        <div
-          className="status-badge"
-          style={{ opacity: btnsVisible ? 1 : 0 }}
-        >
-          <PulseDot />
-          SEEKING INTERNSHIP 2025
         </div>
 
       </div>
@@ -421,89 +409,6 @@ function Cursor() {
 }
 
 
-// =============================================================================
-// PulseDot
-// =============================================================================
-function PulseDot() {
-  return <span className="pulse-dot" />;
-}
-
-
-// =============================================================================
-// StatusBar
-// =============================================================================
-function StatusBar() {
-  const waveRef   = useRef(null);
-  const rafId     = useRef(null);
-  const offsetRef = useRef(0);
-
-  const [pkts, setPkts] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setPkts(p => p + Math.floor(Math.random() * 12) + 1), 200);
-    return () => clearInterval(id);
-  }, []);
-
-  const [upSec, setUpSec] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setUpSec(s => s + 1), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const fmtUptime = (s) => {
-    const p = v => String(v).padStart(2, "0");
-    return `${p(Math.floor(s / 3600))}:${p(Math.floor((s % 3600) / 60))}:${p(s % 60)}`;
-  };
-
-  useEffect(() => {
-    const canvas = waveRef.current;
-    if (!canvas) return;
-    canvas.width  = 100;
-    canvas.height = 18;
-    const ctx = canvas.getContext("2d");
-
-    const draw = () => {
-      ctx.clearRect(0, 0, 100, 18);
-      ctx.strokeStyle = C.green;
-      ctx.lineWidth   = 1;
-      ctx.beginPath();
-      for (let x = 0; x < 100; x++) {
-        const t = (x + offsetRef.current) / 18;
-        const y = 9
-          + Math.sin(t) * 5
-          + Math.sin(t * 2.9) * 2
-          + (Math.random() - 0.5) * 0.4;
-        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      offsetRef.current += 1.8;
-      rafId.current = requestAnimationFrame(draw);
-    };
-
-    rafId.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafId.current);
-  }, []);
-
-  const item = (label, value, color = C.green) => (
-    <div className="statusbar-item">
-      <span className="statusbar-label">{label}</span>
-      <span style={{ color, fontWeight: 500 }}>{value}</span>
-    </div>
-  );
-
-  return (
-    <div className="statusbar">
-      {item("FREQ", "156.800 MHz")}
-      {item("MODE", "USB")}
-      {item("RX",   String(pkts % 100000).padStart(5, "0"))}
-      <canvas ref={waveRef} style={{ height: 18, width: 100 }} />
-      <div className="statusbar-right">
-        {item("UPTIME", fmtUptime(upSec))}
-        {item("ERR",    "0.00%")}
-        {item("SYS",    "NOMINAL")}
-      </div>
-    </div>
-  );
-}
 
 
 // =============================================================================
@@ -951,7 +856,6 @@ export default function App() {
 
       {/* ── Fixed chrome ── */}
       <TopBar visible={topBarVis} onNav={handleNav} />
-      {done && !transitioning && <StatusBar />}
 
       {/* ── Hero content (always mounted; hidden when a section is active) ── */}
       <MainContent
