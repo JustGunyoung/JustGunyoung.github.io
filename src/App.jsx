@@ -11,8 +11,7 @@
 //   │   ├── NavButton    — CTA button; onClick triggers radar transition
 //   │   ├── Cursor       — blinking terminal cursor
 //   │   └── PulseDot     — animated green status dot
-//   ├── RadarCanvas      — full-screen radar (intro + wipe transitions)
-//   ├── MiniRadarCorner  — persistent corner radar post-intro
+//   ├── RadarCanvas      — full-screen radar (runs forever; wipes on nav)
 //   ├── StatusBar        — bottom fixed bar with live readouts
 //   ├── SectionResume    — fixed full-screen overlay, revealed by radar
 //   ├── SectionPortfolio — fixed full-screen overlay
@@ -427,114 +426,6 @@ function Cursor() {
 // =============================================================================
 function PulseDot() {
   return <span className="pulse-dot" />;
-}
-
-
-// =============================================================================
-// MiniRadarCorner
-// =============================================================================
-function MiniRadarCorner() {
-  const ref   = useRef(null);
-  const aRef  = useRef(-Math.PI / 2);
-  const rafId = useRef(null);
-
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas) return;
-
-    const SIZE = 160;
-    canvas.width  = SIZE;
-    canvas.height = SIZE;
-    const cx = SIZE / 2;
-    const cy = SIZE / 2;
-    const R  = SIZE / 2 - 4;
-
-    const ctx = canvas.getContext("2d");
-
-    const blips = [
-      { angle: 0.8, r: R * 0.50 },
-      { angle: 2.3, r: R * 0.72 },
-      { angle: 4.1, r: R * 0.38 },
-    ];
-
-    const draw = () => {
-      ctx.clearRect(0, 0, SIZE, SIZE);
-
-      ctx.strokeStyle = C.border;
-      ctx.lineWidth   = 0.5;
-      for (let r = R / 3; r <= R; r += R / 3) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, TWO_PI);
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.moveTo(0, cy); ctx.lineTo(SIZE, cy);
-      ctx.moveTo(cx, 0); ctx.lineTo(cx, SIZE);
-      ctx.stroke();
-
-      for (let i = 0; i < 40; i++) {
-        const t  = i / 40;
-        const a0 = lerp(aRef.current - TRAIL_ANGLE, aRef.current, t);
-        const a1 = lerp(aRef.current - TRAIL_ANGLE, aRef.current, (i + 1) / 40);
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, R, a0, a1);
-        ctx.closePath();
-        ctx.fillStyle = `rgba(29,255,111,${t * 0.18})`;
-        ctx.fill();
-        ctx.restore();
-      }
-
-      ctx.save();
-      ctx.strokeStyle = C.green;
-      ctx.lineWidth   = 1.5;
-      ctx.shadowColor = C.green;
-      ctx.shadowBlur  = 8;
-      ctx.beginPath();
-      ctx.moveTo(cx, cy);
-      ctx.lineTo(cx + Math.cos(aRef.current) * R, cy + Math.sin(aRef.current) * R);
-      ctx.stroke();
-      ctx.restore();
-
-      blips.forEach(b => {
-        const da = ((aRef.current - b.angle) % TWO_PI + TWO_PI) % TWO_PI;
-        const br = Math.pow(Math.max(0, 1 - da / (Math.PI * 0.6)), 2);
-        if (br < 0.04) return;
-
-        const bx = cx + Math.cos(b.angle) * b.r;
-        const by = cy + Math.sin(b.angle) * b.r;
-        ctx.save();
-        ctx.fillStyle   = `rgba(29,255,111,${0.2 + br * 0.8})`;
-        ctx.shadowColor = C.green;
-        ctx.shadowBlur  = 6 * br;
-        ctx.beginPath();
-        ctx.arc(bx, by, 2 + br * 2, 0, TWO_PI);
-        ctx.fill();
-        ctx.restore();
-      });
-
-      ctx.save();
-      ctx.strokeStyle = "#1A3A1A";
-      ctx.lineWidth   = 1;
-      ctx.beginPath();
-      ctx.arc(cx, cy, R, 0, TWO_PI);
-      ctx.stroke();
-      ctx.restore();
-
-      aRef.current += RPM * TWO_PI / 60;
-      rafId.current = requestAnimationFrame(draw);
-    };
-
-    rafId.current = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(rafId.current);
-  }, []);
-
-  return (
-    <div className="mini-radar">
-      <canvas ref={ref} />
-    </div>
-  );
 }
 
 
@@ -1071,16 +962,14 @@ export default function App() {
       />
 
       {/* ── Radar canvas:
-            • During intro: full reveal animation (revealed 0→1)
-            • During transition: wipe cover/reveal (transRevealed 1→0→1)
-            • After intro + no transition: mini corner radar takes over ── */}
-      {!done && !transitioning && (
+            • Normal: full-screen radar runs at all times (revealed stays 1 post-intro)
+            • During transition: wipe uses transRevealed (1→0→1) instead ── */}
+      {!transitioning && (
         <RadarCanvas angle={angle} revealed={revealed} />
       )}
       {transitioning && (
         <RadarCanvas angle={angle} revealed={transRevealed} />
       )}
-      {done && !transitioning && <MiniRadarCorner />}
 
       {/* ── Section overlays (rendered once done; opacity controlled by isActive) ── */}
       {done && (
