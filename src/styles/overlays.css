@@ -38,3 +38,10 @@
   pointer-events: none;
   z-index: 20;
 }
+
+/* Rings layer: sits behind MainContent and SectionPanel so the static
+   circular grid feels recessed. Sweep, trail, mask, and blips remain on
+   the default .radar-canvas layer above the content. */
+.radar-canvas--rings {
+  z-index: 5;
+}

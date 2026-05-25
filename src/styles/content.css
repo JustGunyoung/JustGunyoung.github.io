@@ -20,15 +20,6 @@
   width: 100%;
 }
 
-.signal-tag {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
-  letter-spacing: 0.28em;
-  color: var(--c-green);
-  margin-bottom: 18px;
-  transition: opacity 0.7s ease, transform 0.7s ease;
-}
-
 .name-block {
   font-family: 'IBM Plex Mono', monospace;
   font-weight: 600;
@@ -75,11 +66,3 @@
   pointer-events: auto;
 }
 
-.cursor-block {
-  display: inline-block;
-  width: 0.07em;
-  height: 0.85em;
-  margin-left: 6px;
-  vertical-align: middle;
-  transition: background 0.1s;
-}

@@ -4,23 +4,25 @@
 // Architecture:
 //   App                  — root; owns animation loop, section state machine
 //   ├── GridBg           — static phosphor grid (CSS only)
+//   ├── RadarRingsCanvas — static circular grid + outer border (low z; behind content)
 //   ├── Scanlines        — CRT scanline overlay (CSS only)
 //   ├── Vignette         — radial edge darkening (CSS only)
 //   ├── TopBar           — fixed header with clock; logo navigates home
 //   ├── MainContent      — name + buttons; pulses with radar sweep
 //   │   ├── NavButton    — CTA button; onClick triggers radar transition
-//   │   ├── Cursor       — blinking terminal cursor
 //   │   └── PulseDot     — animated green status dot
-//   ├── RadarCanvas      — full-screen radar (runs forever; wipes on nav)
+//   ├── RadarCanvas      — full-screen sweep/trail/blips + mask wedge (above content)
 //   ├── SectionResume    — fixed full-screen overlay, revealed by radar
 //   ├── SectionPortfolio — fixed full-screen overlay
 //   └── SectionAlbum     — fixed full-screen overlay
 //
 // Navigation:
-//   Page is permanently non-scrollable. Clicking a nav button triggers a
-//   radar wipe: the sweep covers the screen (3× speed), content switches,
-//   then the radar reveals the new content at normal speed. Clicking the
-//   logo or a topbar link navigates back home the same way.
+//   Page is permanently non-scrollable. Clicking a nav button arms a radar
+//   wipe that is locked to the live sweep angle: as the sweep continues its
+//   normal rotation, content behind it is masked off (cover, 1 rev), then
+//   the section is swapped, then a second rotation reveals the new content
+//   (reveal, 1 rev). The wipe is not a separate animation — it's the actual
+//   sweep line drawing a wedge mask.
 //
 // Sweep-synchronised glow:
 //   MainContent receives the live `angle` each frame. Title (≈ 12 o'clock)
@@ -32,8 +34,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 // ─── Animation constants ─────────────────────────────────────────────────────
 const TWO_PI      = Math.PI * 2;
-const TRAIL_ANGLE = Math.PI * 0.55;
-const RPM         = 0.38;
+const TRAIL_ANGLE = Math.PI * 0.2;
+const RPM         = 0.6;
 const TOTAL_SPIN  = TWO_PI * 1.6;
 
 // ─── Design tokens (still used in canvas drawing + dynamic inline styles) ────
@@ -64,8 +66,16 @@ function sweepBrightness(sweepAngle, elementAngle) {
 
 // =============================================================================
 // RadarCanvas
+//   maskFrom / maskTo: canvas-radian wedge to paint with bg, hiding the
+//   content layer underneath. The wedge goes from maskFrom CLOCKWISE to
+//   maskTo. Pass null/null to skip masking. Same value family for intro,
+//   cover, and reveal — App computes them from the live sweep angle so the
+//   mask edge always sits exactly on the sweep line.
+//   sweepOpacity (0 … 1): multiplier applied to the *dynamic* radar elements
+//   only — sweep trail, sweep line, and blips. Rings and the mask are
+//   unaffected. Lets section pages quiet down without losing the wipe.
 // =============================================================================
-function RadarCanvas({ angle, revealed }) {
+function RadarCanvas({ angle, maskFrom, maskTo, sweepOpacity }) {
   const ref = useRef(null);
 
   useEffect(() => {
@@ -81,18 +91,10 @@ function RadarCanvas({ angle, revealed }) {
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, W, H);
 
-    // ── Step 1: Concentric grid rings ──
-    ctx.save();
-    ctx.strokeStyle = C.border;
-    ctx.lineWidth   = 0.5;
-    for (let r = R / 5; r <= R; r += R / 5) {
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, TWO_PI);
-      ctx.stroke();
-    }
-    ctx.restore();
+    // Rings and outer border now live in RadarRingsCanvas (lower z-index, so
+    // the static circular grid sits behind the title and buttons).
 
-    // ── Step 2: Sweep trail (phosphor afterglow) ──
+    // ── Step 2: Sweep trail (faded by sweepOpacity) ──
     const trailStart = angle - TRAIL_ANGLE;
     const STEPS = 60;
     for (let i = 0; i < STEPS; i++) {
@@ -100,6 +102,7 @@ function RadarCanvas({ angle, revealed }) {
       const a0 = lerp(trailStart, angle, t);
       const a1 = lerp(trailStart, angle, (i + 1) / STEPS);
       ctx.save();
+      ctx.globalAlpha = sweepOpacity;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, R, a0, a1);
@@ -109,8 +112,9 @@ function RadarCanvas({ angle, revealed }) {
       ctx.restore();
     }
 
-    // ── Step 3: Sweep line ──
+    // ── Step 3: Sweep line (faded by sweepOpacity) ──
     ctx.save();
+    ctx.globalAlpha = sweepOpacity;
     ctx.strokeStyle = C.green;
     ctx.lineWidth   = 2;
     ctx.shadowColor = C.green;
@@ -121,22 +125,27 @@ function RadarCanvas({ angle, revealed }) {
     ctx.stroke();
     ctx.restore();
 
-    // ── Step 4: Black mask (hides un-swept content) ──
-    const revealedAngle = clamp(revealed, 0, 1) * TWO_PI;
-    const maskStart = -Math.PI / 2 + revealedAngle;
+    // ── Step 4: Black mask wedge (always opaque so wipes stay hard) ──
+    // maskSpan is the arc length from maskFrom CW to maskTo. By construction
+    // (see App) it is always 0 … 2π, so the sweep edge stays on the sweep
+    // line for both cover and reveal phases.
+    const maskSpan = (maskFrom !== null && maskTo !== null)
+      ? Math.max(0, maskTo - maskFrom)
+      : 0;
 
-    if (revealedAngle < TWO_PI) {
+    if (maskSpan > 1e-4) {
       ctx.save();
+      ctx.globalAlpha = 1;
       ctx.beginPath();
       ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, R * 1.2, maskStart, -Math.PI / 2 + TWO_PI);
+      ctx.arc(cx, cy, R * 1.2, maskFrom, maskTo);
       ctx.closePath();
       ctx.fillStyle = C.bg;
       ctx.fill();
       ctx.restore();
     }
 
-    // ── Step 5: Radar blips ──
+    // ── Step 5: Radar blips (faded by sweepOpacity) ──
     const blips = [
       { angle: -0.6, r: R * 0.28 },
       { angle:  1.1, r: R * 0.45 },
@@ -146,8 +155,11 @@ function RadarCanvas({ angle, revealed }) {
     ];
 
     blips.forEach(b => {
-      const normalised = ((b.angle + Math.PI / 2) % TWO_PI + TWO_PI) % TWO_PI;
-      if (normalised > revealedAngle) return;
+      // Hide a blip if it sits inside the current mask wedge.
+      if (maskSpan > 1e-4) {
+        const offset = ((b.angle - maskFrom) % TWO_PI + TWO_PI) % TWO_PI;
+        if (offset < Math.min(maskSpan, TWO_PI)) return;
+      }
 
       const da = ((angle - b.angle) % TWO_PI + TWO_PI) % TWO_PI;
       const brightness = Math.pow(Math.max(0, 1 - da / (Math.PI * 0.7)), 1.5);
@@ -157,6 +169,7 @@ function RadarCanvas({ angle, revealed }) {
       const by = cy + Math.sin(b.angle) * b.r;
 
       ctx.save();
+      ctx.globalAlpha = sweepOpacity;
       ctx.fillStyle   = `rgba(29,255,111,${0.2 + brightness * 0.8})`;
       ctx.shadowColor = C.green;
       ctx.shadowBlur  = 10 * brightness;
@@ -166,21 +179,62 @@ function RadarCanvas({ angle, revealed }) {
       ctx.restore();
     });
 
-    // ── Step 6: Outer border ring ──
-    ctx.save();
-    ctx.strokeStyle = "#1A3A1A";
-    ctx.lineWidth   = 1;
-    ctx.beginPath();
-    ctx.arc(cx, cy, R, 0, TWO_PI);
-    ctx.stroke();
-    ctx.restore();
-
-  }, [angle, revealed]);
+  }, [angle, maskFrom, maskTo, sweepOpacity]);
 
   return (
     <canvas
       ref={ref}
       className="radar-canvas"
+      width={window.innerWidth}
+      height={window.innerHeight}
+    />
+  );
+}
+
+
+// =============================================================================
+// RadarRingsCanvas — static concentric grid + outer border.
+// Lives on a lower z-index than MainContent so the title and buttons sit in
+// front of the rings, making the grid feel like a recessed background plate.
+// One-time draw (no animation deps), redrawn only if the component re-mounts.
+// =============================================================================
+function RadarRingsCanvas() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+
+    const W  = canvas.width;
+    const H  = canvas.height;
+    const cx = W / 2;
+    const cy = H / 2;
+    const R  = Math.hypot(cx, cy) * 1.05;
+
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, W, H);
+
+    // Concentric grid rings.
+    ctx.strokeStyle = C.border;
+    ctx.lineWidth   = 0.5;
+    for (let r = R / 5; r <= R; r += R / 5) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, TWO_PI);
+      ctx.stroke();
+    }
+
+    // Outer border ring.
+    ctx.strokeStyle = "#1A3A1A";
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, 0, TWO_PI);
+    ctx.stroke();
+  }, []);
+
+  return (
+    <canvas
+      ref={ref}
+      className="radar-canvas radar-canvas--rings"
       width={window.innerWidth}
       height={window.innerHeight}
     />
@@ -260,7 +314,7 @@ function TopBarNavLink({ children, onClick }) {
 // Props: delay (entrance stagger seconds), visible (boolean), glow (0–1),
 //        onClick (function)
 // =============================================================================
-function NavButton({ children, delay, visible, glow = 0, onClick }) {
+function NavButton({ children, glow = 0, onClick }) {
   const glowStyle = glow > 0.05
     ? {
         boxShadow:   `0 0 ${20 * glow}px rgba(29,255,111,${glow * 0.4}), inset 0 0 ${10 * glow}px rgba(29,255,111,${glow * 0.15})`,
@@ -272,14 +326,7 @@ function NavButton({ children, delay, visible, glow = 0, onClick }) {
     <button
       className="nav-button"
       onClick={onClick}
-      style={{
-        opacity:            visible ? 1 : 0,
-        transform:          visible ? "translateY(0)" : "translateY(10px)",
-        transitionProperty: "opacity, transform",
-        transitionDuration: "0.6s, 0.6s",
-        transitionDelay:    `${delay}s, ${delay}s`,
-        ...glowStyle,
-      }}
+      style={glowStyle}
     >
       {children}
     </button>
@@ -292,9 +339,7 @@ function NavButton({ children, delay, visible, glow = 0, onClick }) {
 // Props: revealed (0→1), angle (radians), hidden (bool), onNav (fn)
 // =============================================================================
 function MainContent({ revealed, angle, hidden, onNav }) {
-  const tagVisible  = revealed > 0.18;
   const topVisible  = revealed > 0.30;
-  const btnsVisible = revealed > 0.72;
 
   // Phosphor glow when sweep passes each element's angular position.
   // Buttons use offset angles so each one lights up at a slightly different time.
@@ -315,26 +360,11 @@ function MainContent({ revealed, angle, hidden, onNav }) {
       {/* ── TOP HALF ── */}
       <div className="main-top">
 
-        <div
-          className="signal-tag"
-          style={{
-            opacity:   tagVisible ? 1 : 0,
-            transform: tagVisible ? "translateY(0)" : "translateY(8px)",
-          }}
-        >
-          ▸ SIGNAL ACQUIRED · DECRYPTING IDENTITY
-        </div>
-
         <div className="name-block">
 
           <div
             className="name-line"
-            style={{
-              opacity:    topVisible ? 1 : 0,
-              transform:  topVisible ? "translateY(0)" : "translateY(16px)",
-              transition: "opacity 0.9s ease 0.1s, transform 0.9s ease 0.1s",
-              textShadow: nameGlow,
-            }}
+            style={{ textShadow: nameGlow }}
           >
             <span className="name-bracket">[</span>
             GUNYOUNG
@@ -343,25 +373,16 @@ function MainContent({ revealed, angle, hidden, onNav }) {
 
           <div
             className="name-line"
-            style={{
-              opacity:    topVisible ? 1 : 0,
-              transform:  topVisible ? "translateY(0)" : "translateY(16px)",
-              transition: "opacity 0.9s ease 0.25s, transform 0.9s ease 0.25s",
-              textShadow: nameGlow,
-            }}
+            style={{ textShadow: nameGlow }}
           >
             <span className="name-bracket">[</span>
             PARK
             <span className="name-bracket">]</span>
-            <Cursor />
           </div>
 
         </div>
 
-        <div
-          className="subtitle"
-          style={{ opacity: topVisible ? 1 : 0 }}
-        >
+        <div className="subtitle">
           ROK NAVY · COMMS &amp; NETWORK ENG · PURDUE CS
         </div>
 
@@ -372,13 +393,13 @@ function MainContent({ revealed, angle, hidden, onNav }) {
       <div className="main-bottom">
 
         <div className="btn-row">
-          <NavButton delay={0.00} visible={btnsVisible} glow={resumeBr}    onClick={() => onNav("resume")}>
+          <NavButton glow={resumeBr}    onClick={() => onNav("resume")}>
             ↓ RESUME
           </NavButton>
-          <NavButton delay={0.12} visible={btnsVisible} glow={portfolioBr} onClick={() => onNav("portfolio")}>
+          <NavButton glow={portfolioBr} onClick={() => onNav("portfolio")}>
             ⌥ PORTFOLIO
           </NavButton>
-          <NavButton delay={0.24} visible={btnsVisible} glow={albumBr}     onClick={() => onNav("album")}>
+          <NavButton glow={albumBr}     onClick={() => onNav("album")}>
             ◈ ALBUM
           </NavButton>
         </div>
@@ -387,28 +408,6 @@ function MainContent({ revealed, angle, hidden, onNav }) {
     </div>
   );
 }
-
-
-// =============================================================================
-// Cursor
-// =============================================================================
-function Cursor() {
-  const [on, setOn] = useState(true);
-
-  useEffect(() => {
-    const id = setInterval(() => setOn(v => !v), 530);
-    return () => clearInterval(id);
-  }, []);
-
-  return (
-    <span
-      className="cursor-block"
-      style={{ background: on ? C.green : "transparent" }}
-    />
-  );
-}
-
-
 
 
 // =============================================================================
@@ -742,24 +741,48 @@ function AlbumTile({ entry, delay, inView }) {
 
 // =============================================================================
 // App  (root component)
+//
+// Transition state machine (radar-locked):
+//   transitionStart === null            → no transition. Mask only during intro.
+//   angle - transitionStart in [0, 2π)  → COVER phase. Mask wedge grows from
+//                                          start angle CW to current sweep,
+//                                          painting bg over the old content.
+//   angle - transitionStart === 2π      → swap currentSection ← pendingSection.
+//   angle - transitionStart in [2π, 4π) → REVEAL phase. Mask shrinks; the area
+//                                          behind the sweep uncovers the new
+//                                          content. Same speed as the radar.
+//   angle - transitionStart ≥ 4π        → done; clear transition state.
 // =============================================================================
 export default function App() {
-  const [angle,        setAngle]        = useState(-Math.PI / 2);
-  const [revealed,     setRevealed]     = useState(0);
-  const [done,         setDone]         = useState(false);
-  const [topBarVis,    setTopBarVis]    = useState(false);
-  const [currentSection, setCurrentSection] = useState(null);
-  const [transitioning,  setTransitioning]  = useState(false);
-  const [transRevealed,  setTransRevealed]  = useState(1);
+  const [angle,            setAngle]            = useState(-Math.PI / 2);
+  const [revealed,         setRevealed]         = useState(0);
+  const [done,             setDone]             = useState(false);
+  const [topBarVis,        setTopBarVis]        = useState(false);
+  const [currentSection,   setCurrentSection]   = useState(null);
+  const [transitionStart,  setTransitionStart]  = useState(null);
+  const [pendingSection,   setPendingSection]   = useState(null);
+  // Opacity of sweep + trail + blips. 1 during intro, on home, or mid-wipe;
+  // ramps to 0 when idle on a section page. Rings + mask are unaffected.
+  const [sweepOpacity,     setSweepOpacity]     = useState(1);
 
-  // Refs for the main animation loop
-  const rafRef      = useRef(null);
-  const lastTimeRef = useRef(null);
-  const totalRef    = useRef(0);
-  const doneRef     = useRef(false); // mirrors `done` without stale closure issues
+  // Refs for the main animation loop (avoid stale closures inside rAF callbacks).
+  const rafRef            = useRef(null);
+  const lastTimeRef       = useRef(null);
+  const totalRef          = useRef(0);
+  const doneRef           = useRef(false);
+  const transitionStartRef = useRef(null);
+  const pendingRef         = useRef(null);
+  const currentSectionRef  = useRef(null);
+  const sweepOpacityRef    = useRef(1);
+
+  // Fade rates (units/sec). Fade-in is intentionally slow enough to be
+  // visibly perceived as a "spool-up" rather than a flash.
+  const SWEEP_FADE_IN_RATE  = 1 / 1.2; // 0 → 1 in ~1.2 s
+  const SWEEP_FADE_OUT_RATE = 1 / 0.6; // 1 → 0 in ~0.6 s
 
   // Main rAF loop — runs forever (even post-intro) so `angle` keeps updating
-  // for the radar-synchronized glow effect on title and buttons.
+  // for the radar-synchronized glow effect on title and buttons, AND so the
+  // transition state machine can tick off cover→swap→reveal milestones.
   const animate = useCallback((ts) => {
     if (lastTimeRef.current === null) lastTimeRef.current = ts;
     const dt = Math.min((ts - lastTimeRef.current) / 1000, 0.05);
@@ -767,12 +790,11 @@ export default function App() {
 
     const dAngle = RPM * TWO_PI * dt;
     totalRef.current += dAngle;
-
-    setAngle(a => a + dAngle);
+    const newAngle = -Math.PI / 2 + totalRef.current;
+    setAngle(newAngle);
 
     if (!doneRef.current) {
       setRevealed(clamp(totalRef.current / TWO_PI, 0, 1));
-
       if (totalRef.current >= TOTAL_SPIN) {
         setDone(true);
         doneRef.current = true;
@@ -780,6 +802,43 @@ export default function App() {
       } else if (totalRef.current > 0.15 * TWO_PI) {
         setTopBarVis(true);
       }
+    }
+
+    // Transition progression (radar-locked).
+    if (transitionStartRef.current !== null) {
+      const traveled = newAngle - transitionStartRef.current;
+
+      // End of cover (1 rev) → swap content while it's fully masked.
+      if (traveled >= TWO_PI && currentSectionRef.current !== pendingRef.current) {
+        currentSectionRef.current = pendingRef.current;
+        setCurrentSection(pendingRef.current);
+      }
+
+      // End of reveal (2 revs) → clear transition state.
+      if (traveled >= TWO_PI * 2) {
+        transitionStartRef.current = null;
+        pendingRef.current = null;
+        setTransitionStart(null);
+        setPendingSection(null);
+      }
+    }
+
+    // Sweep opacity ramp — derived from the same state machine.
+    const sweepTarget = (
+      !doneRef.current
+      || transitionStartRef.current !== null
+      || currentSectionRef.current === null
+    ) ? 1 : 0;
+
+    const cur = sweepOpacityRef.current;
+    if (cur !== sweepTarget) {
+      const rate = sweepTarget > cur ? SWEEP_FADE_IN_RATE : SWEEP_FADE_OUT_RATE;
+      const step = dt * rate;
+      const next = sweepTarget > cur
+        ? Math.min(sweepTarget, cur + step)
+        : Math.max(sweepTarget, cur - step);
+      sweepOpacityRef.current = next;
+      setSweepOpacity(next);
     }
 
     rafRef.current = requestAnimationFrame(animate);
@@ -790,54 +849,43 @@ export default function App() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [animate]);
 
-  // handleNav — triggers a radar wipe transition to the target section (or null for home).
+  // handleNav — arms a radar wipe transition by recording the current sweep
+  // angle. From that point, the existing animation loop drives everything.
   const handleNav = useCallback((section) => {
-    if (!doneRef.current || transitioning) return;
-    if (section === currentSection) return;
+    if (!doneRef.current) return;
+    if (transitionStartRef.current !== null) return;
+    if (section === currentSectionRef.current) return;
 
-    setTransitioning(true);
+    const startAngle = -Math.PI / 2 + totalRef.current;
+    transitionStartRef.current = startAngle;
+    pendingRef.current = section;
+    setTransitionStart(startAngle);
+    setPendingSection(section);
+  }, []);
 
-    // Phase 1: cover sweep — transRevealed goes 1 → 0 at 3× speed
-    let rev = 1;
-    let lastTs = null;
-
-    const coverLoop = (ts) => {
-      if (lastTs === null) lastTs = ts;
-      const dt = Math.min((ts - lastTs) / 1000, 0.05);
-      lastTs = ts;
-
-      rev = Math.max(0, rev - RPM * 3 * dt);
-      setTransRevealed(rev);
-
-      if (rev <= 0) {
-        // Screen is fully covered — switch content, then begin reveal
-        setCurrentSection(section);
-
-        let revTs = null;
-        const revealLoop = (ts2) => {
-          if (revTs === null) revTs = ts2;
-          const dt2 = Math.min((ts2 - revTs) / 1000, 0.05);
-          revTs = ts2;
-
-          rev = Math.min(1, rev + RPM * dt2);
-          setTransRevealed(rev);
-
-          if (rev >= 1) {
-            setTransitioning(false);
-            setTransRevealed(1);
-            return;
-          }
-          requestAnimationFrame(revealLoop);
-        };
-        requestAnimationFrame(revealLoop);
-        return;
-      }
-
-      requestAnimationFrame(coverLoop);
-    };
-
-    requestAnimationFrame(coverLoop);
-  }, [transitioning, currentSection]);
+  // ── Mask wedge for the radar canvas ──
+  // The wedge runs from maskFrom CLOCKWISE to maskTo. Span is always 0 … 2π
+  // so the leading edge of the mask coincides with the sweep line.
+  let maskFrom = null;
+  let maskTo   = null;
+  if (!done) {
+    // Intro: mask covers the un-swept side. Its leading edge IS the sweep.
+    const introMaskTo = -Math.PI / 2 + TWO_PI;
+    maskFrom = Math.min(angle, introMaskTo);
+    maskTo   = introMaskTo;
+  } else if (transitionStart !== null) {
+    const traveled = angle - transitionStart;
+    if (traveled < TWO_PI) {
+      // Cover: wedge grows from the click angle to the live sweep.
+      maskFrom = transitionStart;
+      maskTo   = transitionStart + Math.min(traveled, TWO_PI);
+    } else {
+      // Reveal: wedge shrinks; the live sweep is its leading edge.
+      const revealEnd = transitionStart + TWO_PI * 2;
+      maskFrom = Math.min(angle, revealEnd);
+      maskTo   = revealEnd;
+    }
+  }
 
   return (
     <div
@@ -851,13 +899,16 @@ export default function App() {
     >
       {/* ── Atmospheric layers ── */}
       <GridBg />
+      <RadarRingsCanvas />
       <Vignette />
       <Scanlines />
 
       {/* ── Fixed chrome ── */}
       <TopBar visible={topBarVis} onNav={handleNav} />
 
-      {/* ── Hero content (always mounted; hidden when a section is active) ── */}
+      {/* ── Hero content (always mounted; hidden when a section is active).
+            During the transition the swap is invisible because it happens
+            behind a fully-covering radar mask. ── */}
       <MainContent
         revealed={revealed}
         angle={angle}
@@ -865,15 +916,13 @@ export default function App() {
         onNav={handleNav}
       />
 
-      {/* ── Radar canvas:
-            • Normal: full-screen radar runs at all times (revealed stays 1 post-intro)
-            • During transition: wipe uses transRevealed (1→0→1) instead ── */}
-      {!transitioning && (
-        <RadarCanvas angle={angle} revealed={revealed} />
-      )}
-      {transitioning && (
-        <RadarCanvas angle={angle} revealed={transRevealed} />
-      )}
+      {/* ── Radar canvas — one instance, mask driven by current phase ── */}
+      <RadarCanvas
+        angle={angle}
+        maskFrom={maskFrom}
+        maskTo={maskTo}
+        sweepOpacity={sweepOpacity}
+      />
 
       {/* ── Section overlays (rendered once done; opacity controlled by isActive) ── */}
       {done && (

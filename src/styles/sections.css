@@ -1,4 +1,6 @@
-/* ── Base panel ── */
+/* ── Base panel ──
+   No opacity transition: section swap is instant; the radar wipe is the
+   only visual transition, and it must not see a half-faded section. */
 .section-panel {
   position: fixed;
   inset: 0;
@@ -6,7 +8,6 @@
   overflow-y: auto;
   padding-top: 44px;
   background: var(--c-bg);
-  transition: opacity 0.3s ease;
 }
 
 .section-panel::-webkit-scrollbar { width: 4px; }
