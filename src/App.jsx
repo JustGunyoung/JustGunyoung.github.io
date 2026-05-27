@@ -24,11 +24,14 @@
 //   sweep line drawing a wedge mask.
 //
 // Sweep-synchronised glow:
-//   MainContent receives the live `angle` each frame. Each title letter gets
-//   a slightly offset elementAngle around 12 o'clock so the glow sweeps L→R
-//   across the word; buttons sit near 6 o'clock and light in sequence. Both
-//   use phosphor-style afterglow keyed to the live sweep — same physics as
-//   blip contacts, with a longer decay window on the title.
+//   MainContent receives the live `angle` each frame. Title letters are
+//   measured in screen coordinates and each gets an elementAngle derived
+//   from its real position; the outline is painted via a CSS mask whose
+//   gradient stops carry per-sample brightness along the CW-perpendicular-
+//   to-radial direction, so each letter fades in AND out angled across the
+//   glyph. Buttons sit near 6 o'clock and light in sequence. Both use the
+//   same phosphor-style afterglow physics as the radar blips, with a wider
+//   decay window on the title.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
@@ -38,6 +41,8 @@ const TWO_PI      = Math.PI * 2;
 const TRAIL_ANGLE = Math.PI * 0.2;
 const RPM         = 0.6;
 const TOTAL_SPIN  = TWO_PI * 1.6;
+// Canvas angle where the sweep begins its first rotation. π = 9 o'clock (West).
+const SWEEP_START = Math.PI;
 
 // ─── Design tokens (still used in canvas drawing + dynamic inline styles) ────
 const C = {
@@ -48,8 +53,7 @@ const C = {
   cyan:   "#00E5FF",
 };
 
-const lerp  = (a, b, t) => a + (b - a) * t;
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const lerp = (a, b, t) => a + (b - a) * t;
 
 // Computes how brightly the radar sweep is currently illuminating an element
 // at `elementAngle` radians. Returns 0–1 with phosphor afterglow decay.
@@ -59,12 +63,13 @@ function sweepBrightness(sweepAngle, elementAngle) {
   return Math.pow(Math.max(0, 1 - da / (Math.PI * 0.7)), 1.5);
 }
 
-// Wider-decay variant used by the title — keeps each letter glowing visibly
-// long after the sweep passes so the per-letter diagonal glow front has room
-// to migrate across the glyph instead of flickering for one frame.
+// Wider-decay variant used by the title — keeps each letter glowing long
+// after the sweep passes so the angled fade across the glyph (driven by the
+// mask gradient in GlowLetters) has room to play out instead of snapping off
+// in a single frame.
 function sweepBrightnessTitle(sweepAngle, elementAngle) {
   const da = ((sweepAngle - elementAngle) % TWO_PI + TWO_PI) % TWO_PI;
-  return Math.pow(Math.max(0, 1 - da / TWO_PI), 0.45);
+  return Math.pow(Math.max(0, 1 - da / (Math.PI * 1.75)), 0.5);
 }
 
 
@@ -340,13 +345,15 @@ function NavButton({ children, glow = 0, onClick }) {
 // =============================================================================
 // GlowLetters
 //   Renders `text` as one <span> per character with a -webkit-text-stroke
-//   outline driven by the radar sweep. Each letter is measured in screen
-//   coordinates so the per-frame textShadow can be built from N samples
-//   spaced along the CW-perpendicular-to-radial direction at the letter's
-//   position. As the sweep rotates past a letter, the brightest sample
-//   migrates across the glyph along that perpendicular — producing a glow
-//   front whose diagonal angle matches the radial geometry at that letter
-//   (upper-left letters tilt one way, upper-right letters tilt the other).
+//   outline. Each letter is measured in screen coordinates; per frame, we
+//   sample sweep brightness at N positions along the CW-perpendicular-to-
+//   radial direction at the letter's location, then emit those samples as
+//   alpha stops on a CSS linear-gradient mask oriented along the same
+//   perpendicular. The mask attenuates the outline per position, so the
+//   leading edge of the glyph (where the sweep arrives first) brightens
+//   and decays before the trailing edge — both appearance and disappearance
+//   sweep diagonally across each letter, with the diagonal angle matching
+//   the radial geometry at that letter's screen position.
 //
 //   `baseAngle` is retained only as a first-frame fallback before refs land.
 // =============================================================================
@@ -383,16 +390,14 @@ function GlowLetters({ text, baseAngle, angle }) {
 
   return chars.map((ch, i) => {
     const rect = rects[i];
-    let textShadow = "none";
+    let peakBr;
+    let maskImage = null;
 
     if (!rect) {
       // Fallback before measurement lands: single sample at the legacy angle.
       const t = chars.length > 1 ? i / (chars.length - 1) : 0.5;
       const letterAngle = baseAngle + (t - 0.5) * 0.6;
-      const br = sweepBrightnessTitle(angle, letterAngle);
-      if (br > 0.05) {
-        textShadow = `0 0 ${28 * br}px rgba(29,255,111,${br * 0.9}), 0 0 ${8 * br}px rgba(29,255,111,${br})`;
-      }
+      peakBr = sweepBrightnessTitle(angle, letterAngle);
     } else {
       const ddx = rect.lx - screen.cx;
       const ddy = rect.ly - screen.cy;
@@ -402,12 +407,14 @@ function GlowLetters({ text, baseAngle, angle }) {
       const perpX = -ddy / dist;
       const perpY =  ddx / dist;
 
-      // Sample brightness across the letter's angular extent and keep only the
-      // PEAK. Emitting one shadow per sample stacks ghosted copies of the
-      // letter shape; a single shadow at zero offset keeps the glyph in place
-      // while the peak across samples widens the plateau so the letter stays
-      // lit for the entire sweep crossing instead of flashing at one angle.
-      let peakBr = 0;
+      // Per-sample brightness along perpDir. The −perpDir side (stop 0%) is
+      // the leading edge the sweep hits first; the +perpDir side (stop 100%)
+      // is hit last. Each sample carries its own afterglow curve, so the
+      // gradient mask makes both appearance AND disappearance sweep angled
+      // across the glyph — the leading edge fades first, the trailing edge
+      // hangs on last.
+      const samples = new Array(GLOW_SAMPLES);
+      peakBr = 0;
       for (let s = 0; s < GLOW_SAMPLES; s++) {
         const t  = (s - (GLOW_SAMPLES - 1) / 2) / (GLOW_SAMPLES - 1);
         const ox = t * rect.w * GLOW_EXTENT * perpX;
@@ -415,23 +422,37 @@ function GlowLetters({ text, baseAngle, angle }) {
         const sampleAngle = Math.atan2(rect.ly + oy - screen.cy,
                                        rect.lx + ox - screen.cx);
         const br = sweepBrightnessTitle(angle, sampleAngle);
+        samples[s] = br;
         if (br > peakBr) peakBr = br;
       }
+
       if (peakBr > 0.05) {
-        textShadow =
-          `0 0 ${(28 * peakBr).toFixed(1)}px rgba(29,255,111,${(peakBr * 0.9).toFixed(2)}),` +
-          `0 0 ${(8  * peakBr).toFixed(1)}px rgba(29,255,111,${peakBr.toFixed(2)})`;
+        // CSS gradient angle = compass bearing of perpDir (CW from up).
+        let cssAngle = Math.atan2(perpX, -perpY) * 180 / Math.PI;
+        if (cssAngle < 0) cssAngle += 360;
+
+        const stops = samples
+          .map((br, s) => `rgba(0,0,0,${br.toFixed(2)}) ${(s * 100 / (GLOW_SAMPLES - 1)).toFixed(0)}%`)
+          .join(",");
+        maskImage = `linear-gradient(${cssAngle.toFixed(1)}deg, ${stops})`;
       }
     }
+
+    // Stroke carries the visible outline (interior fill is transparent via
+    // .name-line CSS). When the mask is active, the stroke is painted at
+    // full alpha and the mask attenuates per-position so the outline fades
+    // in and out angled across the glyph; without it (fallback path), stroke
+    // alpha tracks peakBr directly.
+    const strokeAlpha = maskImage ? 1 : peakBr;
 
     return (
       <span
         key={i}
         ref={el => { refs.current[i] = el; }}
         style={{
-          WebkitTextStroke: "6px transparent",
-          paintOrder: "stroke fill",
-          textShadow,
+          WebkitTextStroke: `1px rgba(29,255,111,${strokeAlpha.toFixed(2)})`,
+          WebkitMaskImage: maskImage || undefined,
+          maskImage:       maskImage || undefined,
         }}
       >
         {ch}
@@ -840,7 +861,7 @@ function AlbumTile({ entry, delay, inView }) {
 //   angle - transitionStart ≥ 4π        → done; clear transition state.
 // =============================================================================
 export default function App() {
-  const [angle,            setAngle]            = useState(-Math.PI / 2);
+  const [angle,            setAngle]            = useState(SWEEP_START);
   const [done,             setDone]             = useState(false);
   const [topBarVis,        setTopBarVis]        = useState(false);
   const [currentSection,   setCurrentSection]   = useState(null);
@@ -874,7 +895,7 @@ export default function App() {
 
     const dAngle = RPM * TWO_PI * dt;
     totalRef.current += dAngle;
-    const newAngle = -Math.PI / 2 + totalRef.current;
+    const newAngle = SWEEP_START + totalRef.current;
     setAngle(newAngle);
 
     if (!doneRef.current) {
@@ -938,7 +959,7 @@ export default function App() {
     if (transitionStartRef.current !== null) return;
     if (section === currentSectionRef.current) return;
 
-    const startAngle = -Math.PI / 2 + totalRef.current;
+    const startAngle = SWEEP_START + totalRef.current;
     transitionStartRef.current = startAngle;
     pendingRef.current = section;
     setTransitionStart(startAngle);
@@ -951,7 +972,7 @@ export default function App() {
   let maskTo   = null;
   if (!done) {
     // Intro: mask covers the un-swept side. Its leading edge IS the sweep.
-    const introMaskTo = -Math.PI / 2 + TWO_PI;
+    const introMaskTo = SWEEP_START + TWO_PI;
     maskFrom = Math.min(angle, introMaskTo);
     maskTo   = introMaskTo;
   } else if (transitionStart !== null) {
