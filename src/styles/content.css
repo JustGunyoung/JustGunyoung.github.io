@@ -28,24 +28,11 @@
 }
 
 .name-line {
-  font-size: clamp(52px, 9vw, 120px);
+  font-size: clamp(60px, 10.5vw, 140px);
   color: #E8F0E8;
+  -webkit-text-fill-color: transparent;
   letter-spacing: -0.02em;
 }
-
-.name-bracket {
-  color: var(--c-amber);
-}
-
-.subtitle {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 13px;
-  color: var(--c-text-dim);
-  letter-spacing: 0.12em;
-  margin-top: 18px;
-  transition: opacity 1s ease 0.5s;
-}
-
 
 .main-bottom {
   flex: 1;

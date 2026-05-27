@@ -1,5 +1,4 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// App.jsx  —  SIGINT-themed personal landing for Gunyoung Park.
 //
 // Architecture:
 //   App                  — root; owns animation loop, section state machine
@@ -10,7 +9,7 @@
 //   ├── TopBar           — fixed header with clock; logo navigates home
 //   ├── MainContent      — name + buttons; pulses with radar sweep
 //   │   ├── NavButton    — CTA button; onClick triggers radar transition
-//   │   └── PulseDot     — animated green status dot
+//   │   └── GlowLetters  — per-letter sweep-driven outline glow on the title
 //   ├── RadarCanvas      — full-screen sweep/trail/blips + mask wedge (above content)
 //   ├── SectionResume    — fixed full-screen overlay, revealed by radar
 //   ├── SectionPortfolio — fixed full-screen overlay
@@ -25,12 +24,14 @@
 //   sweep line drawing a wedge mask.
 //
 // Sweep-synchronised glow:
-//   MainContent receives the live `angle` each frame. Title (≈ 12 o'clock)
-//   and buttons (≈ 6 o'clock) glow with phosphor afterglow as the sweep
-//   passes their angular position — same physics as blip contacts.
+//   MainContent receives the live `angle` each frame. Each title letter gets
+//   a slightly offset elementAngle around 12 o'clock so the glow sweeps L→R
+//   across the word; buttons sit near 6 o'clock and light in sequence. Both
+//   use phosphor-style afterglow keyed to the live sweep — same physics as
+//   blip contacts, with a longer decay window on the title.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 
 // ─── Animation constants ─────────────────────────────────────────────────────
 const TWO_PI      = Math.PI * 2;
@@ -40,16 +41,11 @@ const TOTAL_SPIN  = TWO_PI * 1.6;
 
 // ─── Design tokens (still used in canvas drawing + dynamic inline styles) ────
 const C = {
-  bg:       "#07090C",
-  panel:    "#0D1117",
-  border:   "#1A2A1A",
-  green:    "#1DFF6F",
-  greenDim: "#0A4020",
-  amber:    "#FFB300",
-  amberDim: "#7A5500",
-  cyan:     "#00E5FF",
-  text:     "#C8D0C8",
-  textDim:  "#3A4A3A",
+  bg:     "#07090C",
+  border: "#1A2A1A",
+  green:  "#1DFF6F",
+  amber:  "#FFB300",
+  cyan:   "#00E5FF",
 };
 
 const lerp  = (a, b, t) => a + (b - a) * t;
@@ -61,6 +57,14 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 function sweepBrightness(sweepAngle, elementAngle) {
   const da = ((sweepAngle - elementAngle) % TWO_PI + TWO_PI) % TWO_PI;
   return Math.pow(Math.max(0, 1 - da / (Math.PI * 0.7)), 1.5);
+}
+
+// Wider-decay variant used by the title — keeps each letter glowing visibly
+// long after the sweep passes so the per-letter diagonal glow front has room
+// to migrate across the glyph instead of flickering for one frame.
+function sweepBrightnessTitle(sweepAngle, elementAngle) {
+  const da = ((sweepAngle - elementAngle) % TWO_PI + TWO_PI) % TWO_PI;
+  return Math.pow(Math.max(0, 1 - da / TWO_PI), 0.45);
 }
 
 
@@ -311,8 +315,7 @@ function TopBarNavLink({ children, onClick }) {
 
 // =============================================================================
 // NavButton
-// Props: delay (entrance stagger seconds), visible (boolean), glow (0–1),
-//        onClick (function)
+// Props: glow (0–1), onClick (function)
 // =============================================================================
 function NavButton({ children, glow = 0, onClick }) {
   const glowStyle = glow > 0.05
@@ -335,22 +338,119 @@ function NavButton({ children, glow = 0, onClick }) {
 
 
 // =============================================================================
-// MainContent
-// Props: revealed (0→1), angle (radians), hidden (bool), onNav (fn)
+// GlowLetters
+//   Renders `text` as one <span> per character with a -webkit-text-stroke
+//   outline driven by the radar sweep. Each letter is measured in screen
+//   coordinates so the per-frame textShadow can be built from N samples
+//   spaced along the CW-perpendicular-to-radial direction at the letter's
+//   position. As the sweep rotates past a letter, the brightest sample
+//   migrates across the glyph along that perpendicular — producing a glow
+//   front whose diagonal angle matches the radial geometry at that letter
+//   (upper-left letters tilt one way, upper-right letters tilt the other).
+//
+//   `baseAngle` is retained only as a first-frame fallback before refs land.
 // =============================================================================
-function MainContent({ revealed, angle, hidden, onNav }) {
-  const topVisible  = revealed > 0.30;
+const GLOW_SAMPLES = 5;
+const GLOW_EXTENT  = 1.4; // multiplier on letter width: widens angular sampling
 
-  // Phosphor glow when sweep passes each element's angular position.
+function GlowLetters({ text, baseAngle, angle }) {
+  const chars   = text.split("");
+  const refs    = useRef([]);
+  const [rects,  setRects]  = useState([]);
+  const [screen, setScreen] = useState(() => ({
+    cx: typeof window !== "undefined" ? window.innerWidth  / 2 : 0,
+    cy: typeof window !== "undefined" ? window.innerHeight / 2 : 0,
+  }));
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const next = refs.current.map(el => {
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return {
+          lx: r.left + r.width  / 2,
+          ly: r.top  + r.height / 2,
+          w:  r.width,
+        };
+      });
+      setRects(next);
+      setScreen({ cx: window.innerWidth / 2, cy: window.innerHeight / 2 });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [text]);
+
+  return chars.map((ch, i) => {
+    const rect = rects[i];
+    let textShadow = "none";
+
+    if (!rect) {
+      // Fallback before measurement lands: single sample at the legacy angle.
+      const t = chars.length > 1 ? i / (chars.length - 1) : 0.5;
+      const letterAngle = baseAngle + (t - 0.5) * 0.6;
+      const br = sweepBrightnessTitle(angle, letterAngle);
+      if (br > 0.05) {
+        textShadow = `0 0 ${28 * br}px rgba(29,255,111,${br * 0.9}), 0 0 ${8 * br}px rgba(29,255,111,${br})`;
+      }
+    } else {
+      const ddx = rect.lx - screen.cx;
+      const ddy = rect.ly - screen.cy;
+      const dist = Math.max(1e-3, Math.hypot(ddx, ddy));
+      // Radial unit vector from screen center to letter; perpendicular in the
+      // CW sense is the direction the sweep ray slides across the letter.
+      const perpX = -ddy / dist;
+      const perpY =  ddx / dist;
+
+      // Sample brightness across the letter's angular extent and keep only the
+      // PEAK. Emitting one shadow per sample stacks ghosted copies of the
+      // letter shape; a single shadow at zero offset keeps the glyph in place
+      // while the peak across samples widens the plateau so the letter stays
+      // lit for the entire sweep crossing instead of flashing at one angle.
+      let peakBr = 0;
+      for (let s = 0; s < GLOW_SAMPLES; s++) {
+        const t  = (s - (GLOW_SAMPLES - 1) / 2) / (GLOW_SAMPLES - 1);
+        const ox = t * rect.w * GLOW_EXTENT * perpX;
+        const oy = t * rect.w * GLOW_EXTENT * perpY;
+        const sampleAngle = Math.atan2(rect.ly + oy - screen.cy,
+                                       rect.lx + ox - screen.cx);
+        const br = sweepBrightnessTitle(angle, sampleAngle);
+        if (br > peakBr) peakBr = br;
+      }
+      if (peakBr > 0.05) {
+        textShadow =
+          `0 0 ${(28 * peakBr).toFixed(1)}px rgba(29,255,111,${(peakBr * 0.9).toFixed(2)}),` +
+          `0 0 ${(8  * peakBr).toFixed(1)}px rgba(29,255,111,${peakBr.toFixed(2)})`;
+      }
+    }
+
+    return (
+      <span
+        key={i}
+        ref={el => { refs.current[i] = el; }}
+        style={{
+          WebkitTextStroke: "6px transparent",
+          paintOrder: "stroke fill",
+          textShadow,
+        }}
+      >
+        {ch}
+      </span>
+    );
+  });
+}
+
+
+// =============================================================================
+// MainContent
+// Props: angle (radians), hidden (bool), onNav (fn)
+// =============================================================================
+function MainContent({ angle, hidden, onNav }) {
+  // Phosphor glow when sweep passes each button's angular position.
   // Buttons use offset angles so each one lights up at a slightly different time.
-  const titleBr    = sweepBrightness(angle, -Math.PI / 2);       // 12 o'clock
   const albumBr    = sweepBrightness(angle,  Math.PI / 2 - 1); // hits first (right)
   const portfolioBr= sweepBrightness(angle,  Math.PI / 2);       // hits second (center)
   const resumeBr   = sweepBrightness(angle,  Math.PI / 2 + 1); // hits third (left)
-
-  const nameGlow = topVisible && titleBr > 0.04
-    ? `0 0 ${30 * titleBr}px rgba(29,255,111,${titleBr * 0.7})`
-    : "none";
 
   return (
     <div
@@ -362,28 +462,14 @@ function MainContent({ revealed, angle, hidden, onNav }) {
 
         <div className="name-block">
 
-          <div
-            className="name-line"
-            style={{ textShadow: nameGlow }}
-          >
-            <span className="name-bracket">[</span>
-            GUNYOUNG
-            <span className="name-bracket">]</span>
+          <div className="name-line">
+            <GlowLetters text="GUNYOUNG" baseAngle={-Math.PI / 2} angle={angle} />
           </div>
 
-          <div
-            className="name-line"
-            style={{ textShadow: nameGlow }}
-          >
-            <span className="name-bracket">[</span>
-            PARK
-            <span className="name-bracket">]</span>
+          <div className="name-line">
+            <GlowLetters text="PARK" baseAngle={-Math.PI / 2} angle={angle} />
           </div>
 
-        </div>
-
-        <div className="subtitle">
-          ROK NAVY · COMMS &amp; NETWORK ENG · PURDUE CS
         </div>
 
       </div>
@@ -441,7 +527,7 @@ function SectionDivider({ channel, label }) {
 // =============================================================================
 // SectionResume
 // =============================================================================
-function SectionResume({ isActive, onBack }) {
+function SectionResume({ isActive }) {
   const inView = useActiveReveal(isActive);
 
   const skillGroups = [
@@ -594,7 +680,7 @@ function SectionResume({ isActive, onBack }) {
 // =============================================================================
 // SectionPortfolio
 // =============================================================================
-function SectionPortfolio({ isActive, onBack }) {
+function SectionPortfolio({ isActive }) {
   const inView = useActiveReveal(isActive);
 
   const projects = [
@@ -683,7 +769,7 @@ function ProjectCard({ proj, delay, inView }) {
 // =============================================================================
 // SectionAlbum
 // =============================================================================
-function SectionAlbum({ isActive, onBack }) {
+function SectionAlbum({ isActive }) {
   const inView = useActiveReveal(isActive);
 
   const entries = [
@@ -755,12 +841,10 @@ function AlbumTile({ entry, delay, inView }) {
 // =============================================================================
 export default function App() {
   const [angle,            setAngle]            = useState(-Math.PI / 2);
-  const [revealed,         setRevealed]         = useState(0);
   const [done,             setDone]             = useState(false);
   const [topBarVis,        setTopBarVis]        = useState(false);
   const [currentSection,   setCurrentSection]   = useState(null);
   const [transitionStart,  setTransitionStart]  = useState(null);
-  const [pendingSection,   setPendingSection]   = useState(null);
   // Opacity of sweep + trail + blips. 1 during intro, on home, or mid-wipe;
   // ramps to 0 when idle on a section page. Rings + mask are unaffected.
   const [sweepOpacity,     setSweepOpacity]     = useState(1);
@@ -794,7 +878,6 @@ export default function App() {
     setAngle(newAngle);
 
     if (!doneRef.current) {
-      setRevealed(clamp(totalRef.current / TWO_PI, 0, 1));
       if (totalRef.current >= TOTAL_SPIN) {
         setDone(true);
         doneRef.current = true;
@@ -819,7 +902,6 @@ export default function App() {
         transitionStartRef.current = null;
         pendingRef.current = null;
         setTransitionStart(null);
-        setPendingSection(null);
       }
     }
 
@@ -860,7 +942,6 @@ export default function App() {
     transitionStartRef.current = startAngle;
     pendingRef.current = section;
     setTransitionStart(startAngle);
-    setPendingSection(section);
   }, []);
 
   // ── Mask wedge for the radar canvas ──
@@ -910,7 +991,6 @@ export default function App() {
             During the transition the swap is invisible because it happens
             behind a fully-covering radar mask. ── */}
       <MainContent
-        revealed={revealed}
         angle={angle}
         hidden={currentSection !== null}
         onNav={handleNav}
@@ -927,9 +1007,9 @@ export default function App() {
       {/* ── Section overlays (rendered once done; opacity controlled by isActive) ── */}
       {done && (
         <>
-          <SectionResume    isActive={currentSection === "resume"}    onBack={() => handleNav(null)} />
-          <SectionPortfolio isActive={currentSection === "portfolio"} onBack={() => handleNav(null)} />
-          <SectionAlbum     isActive={currentSection === "album"}     onBack={() => handleNav(null)} />
+          <SectionResume    isActive={currentSection === "resume"}    />
+          <SectionPortfolio isActive={currentSection === "portfolio"} />
+          <SectionAlbum     isActive={currentSection === "album"}     />
         </>
       )}
     </div>
