@@ -263,19 +263,6 @@ function GridBg()    { return <div className="grid-bg" />; }
 // TopBar
 // =============================================================================
 function TopBar({ visible, onNav }) {
-  const [utc, setUtc] = useState("");
-
-  useEffect(() => {
-    const fmt = () => {
-      const n = new Date();
-      const p = v => String(v).padStart(2, "0");
-      setUtc(`${p(n.getUTCHours())}:${p(n.getUTCMinutes())}:${p(n.getUTCSeconds())} UTC`);
-    };
-    fmt();
-    const id = setInterval(fmt, 1000);
-    return () => clearInterval(id);
-  }, []);
-
   const navLinks = [
     { label: "RESUME",    section: "resume"    },
     { label: "PORTFOLIO", section: "portfolio" },
@@ -297,10 +284,6 @@ function TopBar({ visible, onNav }) {
           ))}
         </nav>
       </div>
-      <span className="topbar-right">
-        <span className="topbar-clock">{utc}</span>
-        LAT 40.4259° N · LON 86.9081° W
-      </span>
     </div>
   );
 }

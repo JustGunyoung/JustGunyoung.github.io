@@ -355,3 +355,29 @@
 .album-tile:hover .album-hover-border {
   border-color: var(--c-green-dim);
 }
+
+@media (max-width: 640px) {
+  .section-inner {
+    padding: 40px 20px;
+  }
+  .section-inner--album {
+    padding: 40px 20px 80px;
+  }
+  .resume-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+  .project-grid {
+    grid-template-columns: 1fr;
+  }
+  .album-grid {
+    grid-template-columns: 1fr;
+  }
+  .album-tile--span2 {
+    grid-column: span 1;
+  }
+  /* Album captions are hover-only on desktop; always visible on touch */
+  .album-caption {
+    transform: translateY(0);
+  }
+}

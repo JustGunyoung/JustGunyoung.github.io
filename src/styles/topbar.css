@@ -41,15 +41,6 @@
   gap: 4px;
 }
 
-.topbar-right {
-  color: var(--c-text-dim);
-}
-
-.topbar-clock {
-  color: var(--c-green);
-  margin-right: 12px;
-}
-
 .nav-link {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
@@ -93,4 +84,26 @@
   border-color: var(--c-green);
   background: rgba(29,255,111,0.07);
   color: var(--c-green);
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 12px;
+  }
+  .topbar-left {
+    gap: 8px;
+  }
+  .topbar-logo {
+    letter-spacing: 0.08em;
+  }
+  .nav-link {
+    padding: 4px 6px;
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+  .nav-button {
+    padding: 12px 20px;
+    min-width: 120px;
+    font-size: 12px;
+  }
 }
