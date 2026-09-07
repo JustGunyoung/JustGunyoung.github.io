@@ -276,7 +276,7 @@ function TopBar({ visible, onNav }) {
       <div className="topbar-left">
         {/* Logo navigates home */}
         <button className="topbar-logo" onClick={() => onNav(null)}>
-          ◈ SIGINT // STATION-01
+          ◈ MAIN PAGE
         </button>
         <nav className="topbar-nav">
           {navLinks.map(link => (
@@ -606,7 +606,7 @@ function SectionResume({ isActive }) {
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
       <div className="section-inner">
-        <SectionDivider channel="CH-03" label="MISSION LOG // RESUME" />
+        <SectionDivider channel="RESUME" label="MISSION LOGS" />
 
         <div className="resume-grid">
 
@@ -693,14 +693,14 @@ function SectionPortfolio({ isActive }) {
 
   const projects = [
     {
-      freq:     "AUG 2026 – PRESENT // P-01",
+      freq:     "AUG 2026 – PRESENT // P-02",
       name:     "Personal Server",
       desc:     "Converted a desktop into a personal server linking data across my devices. Rewriting the server in Rust with a VMM that boots a Linux kernel; next up is XDP load balancing and eBPF safety.",
       tags:     ["TCP/IP", "HTTP", "Linux", "Tailscale"],
       featured: [0, 2],
     },
     {
-      freq:     "JUN 2023 – AUG 2023 // P-02",
+      freq:     "JUN 2023 – AUG 2023 // P-01",
       name:     "Personal Library",
       desc:     "Full-stack web application with Flask serving a REST API and an HTML frontend. Users build their own library with author and genre filtering.",
       tags:     ["Python", "Flask", "SQLite", "HTML/CSS"],
@@ -714,7 +714,7 @@ function SectionPortfolio({ isActive }) {
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
       <div className="section-inner">
-        <SectionDivider channel="CH-04" label="PAYLOAD // PORTFOLIO" />
+        <SectionDivider channel="Projects" label="Working on P-02" />
 
         <div className="project-grid">
           {projects.map((proj, i) => (
@@ -781,7 +781,7 @@ function SectionContacts({ isActive }) {
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
       <div className="section-inner">
-        <SectionDivider channel="CH-06" label="UPLINK // CONTACTS" />
+        <SectionDivider channel="CONTACTS" label="CONFIDENTIAL" />
 
         <div className="contact-panel">
           {contacts.map((item, i) => {
