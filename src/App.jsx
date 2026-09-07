@@ -560,42 +560,59 @@ function SectionResume({ isActive }) {
       period:   "Expected May 2028",
       role:     "B.S. Computer Science",
       org:      "Purdue University // West Lafayette, IN",
-      desc:     "Pursuing a Bachelor's degree in Computer Science.",
+      bullets:  ["Pursuing a Bachelor's degree in Computer Science."],
       dotColor: C.green,
     },
     {
       period:   "Sept 2024 – June 2026",
       role:     "Communications & Network Engineer",
       org:      "Republic of Korea Navy // ROKS Cheongju, Pyeongtaek, Korea",
-      desc:     "Administered network infrastructure of 5 servers and 80 nodes for 250+ users across 20 months with 99.97% uptime without vendor support. Reduced false-positive IDS alerts by 50% with the fleet's cybersecurity team. Operated tactical and satellite communication systems supporting ship-wide data & voice link. Built an offline HTML & CSS site to track shipmates' onboard status.",
+      bullets: [
+        "Administered network infrastructure of 5 servers and 80 nodes for 250+ users across 20 months with 99.97% uptime without vendor support.",
+        "Reduced false-positive IDS alerts by 50% by collaborating with the fleet's cybersecurity team.",
+        "Operated and maintained tactical and satellite communication systems supporting ship-wide data & voice link.",
+        "Built a simple HTML & CSS website on an offline computer to track shipmates' onboard status.",
+      ],
       dotColor: C.amber,
     },
     {
       period:   "Jan 2024 – May 2024",
       role:     "Data Scientist/Engineer",
       org:      "ThermoFisher Scientific @ Purdue Data Mine // West Lafayette, IN",
-      desc:     "Forecasted weekly SKU demand with linear regression over 8 months of shipment history, cutting required storage footprint by 14%. Consolidated 500K+ shipment records into a normalized SQLite schema, reducing typical query time from ~3 minutes to under 5 seconds. Raised usable record completeness from 83% to 99%.",
+      bullets: [
+        "Forecasted weekly SKU demand with linear regression over 8 months of shipment history, optimizing bin assignments and cutting the required storage footprint by 14%.",
+        "Consolidated 500K+ shipment records from 5 CSV exports into a normalized SQLite schema keyed on package ID, reducing typical query time from ~3 minutes to under 5 seconds.",
+        "Raised usable record completeness from 83% to 99% by deduplicating repetitions and correcting false values.",
+      ],
       dotColor: C.green,
     },
     {
       period:   "Sept 2023 – Dec 2023",
       role:     "Data Engineer",
       org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
-      desc:     "Joined 120K+ sensor readings to 50 stoppage events to construct labeled pre-fault windows, enabling supervised fault prediction on previously unlabeled data. Built a Flask API and React dashboard visualizing predicted fault probability over live sensor traces.",
+      bullets: [
+        "Joined 120K+ sensor readings to 50 stoppage events to construct labeled 10-minute pre-fault windows, enabling supervised fault prediction on previously unlabeled data.",
+        "Built a Flask API and React dashboard visualizing predicted fault probability over live sensor traces.",
+      ],
       dotColor: C.amber,
     },
     {
       period:   "Aug 2021 – Aug 2023",
       role:     "Teacher & Website Developer",
       org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
-      desc:     "Taught coding, engineering, mathematics, and art & technology for 45+ students each summer. Proposed and built a website to aid students and faculty, reducing daily inquiries.",
+      bullets: [
+        "Taught coding, engineering, mathematics, and art & technology for 45+ students each summer.",
+        "Proposed and built a website to aid students and faculty, reducing daily inquiries.",
+      ],
       dotColor: C.green,
     },
     {
       period:   "Sept 2023 – May 2024",
       role:     "Student Cook",
       org:      "Purdue Dining & Culinary // West Lafayette, IN",
-      desc:     "Prepared and served food for hundreds of students at Hillenbrand Dining Court.",
+      bullets: [
+        "Prepared and served food for hundreds of students at Hillenbrand Dining Court in Purdue.",
+      ],
       dotColor: C.amber,
     },
   ];
@@ -632,7 +649,11 @@ function SectionResume({ isActive }) {
                   <div className="timeline-period">{item.period}</div>
                   <div className="timeline-role">{item.role}</div>
                   <div className="timeline-org">{item.org}</div>
-                  <div className="timeline-desc">{item.desc}</div>
+                  <ul className="timeline-bullets">
+                    {item.bullets.map(point => (
+                      <li key={point} className="timeline-bullet">{point}</li>
+                    ))}
+                  </ul>
                 </div>
               ))}
             </div>
@@ -765,8 +786,6 @@ function ProjectCard({ proj, delay, inView }) {
 function SectionContacts({ isActive }) {
   const inView = useActiveReveal(isActive);
 
-  // Placeholder values — deliberately non-real until Gunyoung supplies his own.
-  // 555-01xx is the reserved fictional US phone range.
   const contacts = [
     { label: "NAME",     value: "Gunyoung Park" },
     { label: "EMAIL",    value: "pgy4all@gmail.com",               href: "mailto:pgy4all@gmail.com" },
@@ -780,35 +799,37 @@ function SectionContacts({ isActive }) {
       className="section-panel"
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
-      <div className="section-inner">
+      <div className="section-inner section-inner--contacts">
         <SectionDivider channel="CONTACTS" label="CONFIDENTIAL" />
 
-        <div className="contact-panel">
-          {contacts.map((item, i) => {
-            // Rows only become links when there is somewhere to go.
-            const Tag = item.href ? "a" : "div";
+        <div className="contact-center">
+          <div className="contact-panel">
+            {contacts.map((item, i) => {
+              // Rows only become links when there is somewhere to go.
+              const Tag = item.href ? "a" : "div";
 
-            return (
-              <div
-                key={item.label}
-                className="contact-row"
-                style={{
-                  opacity:    inView ? 1 : 0,
-                  transform:  inView ? "translateY(0)" : "translateY(8px)",
-                  transition: `opacity 0.6s ease ${i * 0.08}s, transform 0.6s ease ${i * 0.08}s`,
-                }}
-              >
-                <span className="contact-label">{item.label}</span>
-                <Tag
-                  href={item.href}
-                  {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className={`contact-value${item.href ? " contact-value--link" : ""}`}
+              return (
+                <div
+                  key={item.label}
+                  className="contact-row"
+                  style={{
+                    opacity:    inView ? 1 : 0,
+                    transform:  inView ? "translateY(0)" : "translateY(8px)",
+                    transition: `opacity 0.6s ease ${i * 0.08}s, transform 0.6s ease ${i * 0.08}s`,
+                  }}
                 >
-                  {item.value}
-                </Tag>
-              </div>
-            );
-          })}
+                  <span className="contact-label">{item.label}</span>
+                  <Tag
+                    href={item.href}
+                    {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className={`contact-value${item.href ? " contact-value--link" : ""}`}
+                  >
+                    {item.value}
+                  </Tag>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
