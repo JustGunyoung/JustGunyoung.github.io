@@ -769,10 +769,10 @@ function SectionContacts({ isActive }) {
   // 555-01xx is the reserved fictional US phone range.
   const contacts = [
     { label: "NAME",     value: "Gunyoung Park" },
-    { label: "EMAIL",    value: "sample@example.com",              href: "mailto:sample@example.com" },
-    { label: "PHONE",    value: "+1 (555) 010-0000",               href: "tel:+15550100000" },
-    { label: "LINKEDIN", value: "linkedin.com/in/your-handle",     href: "https://www.linkedin.com/in/your-handle", external: true },
-    { label: "GITHUB",   value: "github.com/your-handle",          href: "https://github.com/your-handle",          external: true },
+    { label: "EMAIL",    value: "pgy4all@gmail.com",               href: "mailto:pgy4all@gmail.com" },
+    { label: "PHONE",    value: "+1 (765) 694-5951",               href: "tel:+17656945951" },
+    { label: "LINKEDIN", value: "linkedin.com/in/gunyoungpark",     href: "https://www.linkedin.com/in/gunyoungpark", external: true },
+    { label: "GITHUB",   value: "github.com/justGunyoung",          href: "https://github.com/justGunyoung",          external: true },
   ];
 
   return (
