@@ -10,6 +10,9 @@
   --c-amber-dim: #7A5500;
   --c-cyan:      #00E5FF;
   --c-text:      #C8D0C8;
+  /* Body copy inside sections — brighter than --c-text-dim, which stays
+     reserved for de-emphasised chrome (labels, inactive nav, hairlines). */
+  --c-text-body: #A9B6A9;
   --c-text-dim:  #3A4A3A;
 }
 

@@ -534,24 +534,28 @@ function SectionDivider({ channel, label }) {
 // =============================================================================
 // SectionResume
 // =============================================================================
+// Served from public/ — BASE_URL keeps the link correct if the site is ever
+// deployed under a sub-path rather than at the domain root.
+const RESUME_PDF = `${import.meta.env.BASE_URL}Gunyoung_Park_Resume.pdf`;
+
 function SectionResume({ isActive }) {
   const inView = useActiveReveal(isActive);
 
   const skillGroups = [
     {
-      title: "Systems",
+      title: "Programming Languages",
       color: C.green,
-      skills: ["Java", "C / C++", "Linux", "Git", "Docker", "VS Code", "IntelliJ"],
+      skills: ["Java", "Python", "C", "C++", "JavaScript", "R", "SQL", "HTML/CSS"],
     },
     {
       title: "Networks",
       color: C.amber,
-      skills: ["TCP/IP", "SSH", "Cisco Routers/Switches", "SQL"],
+      skills: ["TCP/IP", "SSH", "Cisco Routers/Switches"],
     },
     {
-      title: "Software",
+      title: "Tools, Frameworks, and Libraries",
       color: C.cyan,
-      skills: ["Python", "JavaScript", "React", "Node.js", "Flask", "R", "HTML/CSS", "pandas", "NumPy", "Matplotlib"],
+      skills: ["React", "Flask", "Node.js", "Git", "Linux", "Docker", "VS Code"],
     },
   ];
 
@@ -624,6 +628,31 @@ function SectionResume({ isActive }) {
     >
       <div className="section-inner">
         <SectionDivider channel="RESUME" label="MISSION LOGS" />
+
+        <div
+          className="resume-actions"
+          style={{
+            opacity:    inView ? 1 : 0,
+            transform:  inView ? "translateY(0)" : "translateY(-6px)",
+            transition: "opacity 0.5s ease, transform 0.5s ease",
+          }}
+        >
+          <a
+            className="resume-action"
+            href={RESUME_PDF}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            ▤ SEE IN PDF
+          </a>
+          <a
+            className="resume-action"
+            href={RESUME_PDF}
+            download="Gunyoung_Park_Resume.pdf"
+          >
+            ↓ DOWNLOAD PDF
+          </a>
+        </div>
 
         <div className="resume-grid">
 
@@ -716,14 +745,21 @@ function SectionPortfolio({ isActive }) {
     {
       freq:     "AUG 2026 – PRESENT // P-02",
       name:     "Personal Server",
-      desc:     "Converted a desktop into a personal server linking data across my devices. Rewriting the server in Rust with a VMM that boots a Linux kernel; next up is XDP load balancing and eBPF safety.",
+      bullets: [
+        "Converted a desktop into a personal server to link data across my devices and support my research interests.",
+        "Rewriting the server in Rust and adding a VMM that boots a Linux kernel.",
+        "Upcoming: balancing loads with XDP and adding safety with eBPF.",
+      ],
       tags:     ["TCP/IP", "HTTP", "Linux", "Tailscale"],
       featured: [0, 2],
     },
     {
       freq:     "JUN 2023 – AUG 2023 // P-01",
       name:     "Personal Library",
-      desc:     "Full-stack web application with Flask serving a REST API and an HTML frontend. Users build their own library with author and genre filtering.",
+      bullets: [
+        "Developed a full-stack web application with Flask serving a REST API and HTML as the frontend.",
+        "Built a user-created library with author and genre filtering.",
+      ],
       tags:     ["Python", "Flask", "SQLite", "HTML/CSS"],
       featured: [0, 1],
     },
@@ -764,7 +800,11 @@ function ProjectCard({ proj, delay, inView }) {
       <div className="project-top-border" />
       <div className="project-freq">{proj.freq}</div>
       <div className="project-name">{proj.name}</div>
-      <div className="project-desc">{proj.desc}</div>
+      <ul className="project-bullets">
+        {proj.bullets.map(point => (
+          <li key={point} className="project-bullet">{point}</li>
+        ))}
+      </ul>
       <div className="tag-row">
         {proj.tags.map((tag, ti) => (
           <span
