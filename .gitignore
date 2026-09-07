@@ -1,6 +1,8 @@
 # Logs
 logs
 *.log
+Confidential_Resume_September_2026.pdf
+.claude
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

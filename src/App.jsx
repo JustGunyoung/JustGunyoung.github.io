@@ -263,10 +263,11 @@ function GridBg()    { return <div className="grid-bg" />; }
 // TopBar
 // =============================================================================
 function TopBar({ visible, onNav }) {
+  // ALBUM is hidden until it holds real photos; SectionAlbum is still wired up,
+  // so re-adding the entry here brings it back.
   const navLinks = [
     { label: "RESUME",    section: "resume"    },
     { label: "PORTFOLIO", section: "portfolio" },
-    { label: "ALBUM",     section: "album"     },
   ];
 
   return (
@@ -452,9 +453,8 @@ function GlowLetters({ text, baseAngle, angle }) {
 function MainContent({ angle, hidden, onNav }) {
   // Phosphor glow when sweep passes each button's angular position.
   // Buttons use offset angles so each one lights up at a slightly different time.
-  const albumBr    = sweepBrightness(angle,  Math.PI / 2 - 1); // hits first (right)
-  const portfolioBr= sweepBrightness(angle,  Math.PI / 2);       // hits second (center)
-  const resumeBr   = sweepBrightness(angle,  Math.PI / 2 + 1); // hits third (left)
+  const portfolioBr= sweepBrightness(angle,  Math.PI / 2);       // hits first (right)
+  const resumeBr   = sweepBrightness(angle,  Math.PI / 2 + 1); // hits second (left)
 
   return (
     <div
@@ -489,9 +489,7 @@ function MainContent({ angle, hidden, onNav }) {
           <NavButton glow={portfolioBr} onClick={() => onNav("portfolio")}>
             ⌥ PORTFOLIO
           </NavButton>
-          <NavButton glow={albumBr}     onClick={() => onNav("album")}>
-            ◈ ALBUM
-          </NavButton>
+          {/* ALBUM button hidden until the album holds real photos. */}
         </div>
 
       </div>
@@ -538,57 +536,62 @@ function SectionResume({ isActive }) {
     {
       title: "Systems",
       color: C.green,
-      skills: [
-        { label: "C / C++",      pct: 90 },
-        { label: "Linux Kernel", pct: 85 },
-        { label: "Rust",         pct: 72 },
-        { label: "Assembly",     pct: 60 },
-      ],
+      skills: ["Java", "C / C++", "Linux", "Git", "Docker", "VS Code", "IntelliJ"],
     },
     {
       title: "Networks",
       color: C.amber,
-      skills: [
-        { label: "TCP/IP",     pct: 96 },
-        { label: "RF / Radio", pct: 88 },
-        { label: "Security",   pct: 80 },
-        { label: "SDR",        pct: 74 },
-      ],
+      skills: ["TCP/IP", "SSH", "Cisco Routers/Switches", "SQL"],
     },
     {
       title: "Software",
       color: C.cyan,
-      skills: [
-        { label: "Python",   pct: 88 },
-        { label: "Go",       pct: 78 },
-        { label: "ML / AI",  pct: 72 },
-        { label: "React/TS", pct: 65 },
-      ],
+      skills: ["Python", "JavaScript", "React", "Node.js", "Flask", "R", "HTML/CSS", "pandas", "NumPy", "Matplotlib"],
     },
   ];
 
   const timeline = [
     {
-      period:   "2024 – Present",
+      period:   "Expected May 2028",
       role:     "B.S. Computer Science",
       org:      "Purdue University // West Lafayette, IN",
-      desc:     "Focusing on systems, networks, and applied AI. Key coursework: OS, Compilers, Networks, ML, Cryptography. Dean's List.",
+      desc:     "Pursuing a Bachelor's degree in Computer Science.",
       dotColor: C.green,
     },
     {
-      period:   "20XX – 20XX",
+      period:   "Sept 2024 – June 2026",
       role:     "Communications & Network Engineer",
-      org:      "Republic of Korea Navy",
-      desc:     "Designed and operated tactical communications networks for fleet operations. Managed RF systems, network infrastructure, and classified data transmission.",
+      org:      "Republic of Korea Navy // ROKS Cheongju, Pyeongtaek, Korea",
+      desc:     "Administered network infrastructure of 5 servers and 80 nodes for 250+ users across 20 months with 99.97% uptime without vendor support. Reduced false-positive IDS alerts by 50% with the fleet's cybersecurity team. Operated tactical and satellite communication systems supporting ship-wide data & voice link. Built an offline HTML & CSS site to track shipmates' onboard status.",
       dotColor: C.amber,
     },
     {
-      period:   "Target: 2025",
-      role:     "Software / Systems Engineering Intern",
-      org:      "Seeking // Infrastructure · Security · AI",
-      desc:     "Open to roles at the systems or infrastructure layer — developer tools, security products, AI infrastructure, or early-stage startups.",
+      period:   "Jan 2024 – May 2024",
+      role:     "Data Scientist/Engineer",
+      org:      "ThermoFisher Scientific @ Purdue Data Mine // West Lafayette, IN",
+      desc:     "Forecasted weekly SKU demand with linear regression over 8 months of shipment history, cutting required storage footprint by 14%. Consolidated 500K+ shipment records into a normalized SQLite schema, reducing typical query time from ~3 minutes to under 5 seconds. Raised usable record completeness from 83% to 99%.",
       dotColor: C.green,
-      dimmed:   true,
+    },
+    {
+      period:   "Sept 2023 – Dec 2023",
+      role:     "Data Engineer",
+      org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
+      desc:     "Joined 120K+ sensor readings to 50 stoppage events to construct labeled pre-fault windows, enabling supervised fault prediction on previously unlabeled data. Built a Flask API and React dashboard visualizing predicted fault probability over live sensor traces.",
+      dotColor: C.amber,
+    },
+    {
+      period:   "Aug 2021 – Aug 2023",
+      role:     "Teacher & Website Developer",
+      org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
+      desc:     "Taught coding, engineering, mathematics, and art & technology for 45+ students each summer. Proposed and built a website to aid students and faculty, reducing daily inquiries.",
+      dotColor: C.green,
+    },
+    {
+      period:   "Sept 2023 – May 2024",
+      role:     "Student Cook",
+      org:      "Purdue Dining & Culinary // West Lafayette, IN",
+      desc:     "Prepared and served food for hundreds of students at Hillenbrand Dining Court.",
+      dotColor: C.amber,
     },
   ];
 
@@ -649,27 +652,23 @@ function SectionResume({ isActive }) {
                 >
                   {group.title}
                 </div>
-                {group.skills.map((sk, si) => (
-                  <div
-                    key={sk.label}
-                    className="skill-row"
-                    style={{ marginBottom: si < group.skills.length - 1 ? 10 : 0 }}
-                  >
-                    <span className="skill-label">{sk.label}</span>
-                    <div className="skill-track">
-                      <div
-                        className="skill-fill"
-                        style={{
-                          background:          group.color,
-                          width:               inView ? `${sk.pct}%` : "0%",
-                          transitionDuration:  "1.2s",
-                          transitionDelay:     `${gi * 0.15 + si * 0.06}s`,
-                        }}
-                      />
-                    </div>
-                    <span className="skill-pct">{sk.pct}</span>
-                  </div>
-                ))}
+                <div className="skill-tags">
+                  {group.skills.map((label, si) => (
+                    <span
+                      key={label}
+                      className="skill-tag"
+                      style={{
+                        borderColor: `${group.color}44`,
+                        color:       group.color,
+                        opacity:     inView ? 1 : 0,
+                        transform:   inView ? "translateY(0)" : "translateY(4px)",
+                        transition:  `opacity 0.5s ease ${gi * 0.15 + si * 0.04}s, transform 0.5s ease ${gi * 0.15 + si * 0.04}s`,
+                      }}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -689,36 +688,18 @@ function SectionPortfolio({ isActive }) {
 
   const projects = [
     {
-      freq:     "433.920 MHz // P-01",
-      name:     "NetSentry",
-      desc:     "Real-time network intrusion detection at the kernel level using eBPF. Monitors packet flows with sub-millisecond latency, zero userspace overhead.",
-      tags:     ["C", "eBPF", "Linux", "Security"],
-      featured: [0, 1],
-      link:     "#",
+      freq:     "AUG 2026 – PRESENT // P-01",
+      name:     "Personal Server",
+      desc:     "Converted a desktop into a personal server linking data across my devices. Rewriting the server in Rust with a VMM that boots a Linux kernel; next up is XDP load balancing and eBPF safety.",
+      tags:     ["TCP/IP", "HTTP", "Linux", "Tailscale"],
+      featured: [0, 2],
     },
     {
-      freq:     "868.000 MHz // P-02",
-      name:     "FreqMap",
-      desc:     "SDR-based spectrum analyzer with ML anomaly detection. Visualises RF environments and flags unauthorised transmissions using trained classifiers.",
-      tags:     ["Python", "GNU Radio", "PyTorch", "SDR"],
+      freq:     "JUN 2023 – AUG 2023 // P-02",
+      name:     "Personal Library",
+      desc:     "Full-stack web application with Flask serving a REST API and an HTML frontend. Users build their own library with author and genre filtering.",
+      tags:     ["Python", "Flask", "SQLite", "HTML/CSS"],
       featured: [0, 1],
-      link:     "#",
-    },
-    {
-      freq:     "2400.000 MHz // P-03",
-      name:     "Callsign",
-      desc:     "Distributed key-value store implementing Raft consensus from scratch. Fault-tolerant with linearisable reads and leader election under network partition.",
-      tags:     ["Go", "Raft", "gRPC", "Protobuf"],
-      featured: [0, 1],
-      link:     "#",
-    },
-    {
-      freq:     "5800.000 MHz // P-04",
-      name:     "Sigscan",
-      desc:     "CLI fingerprinting tool for wireless devices via passive 802.11 beacon frame analysis. Deployed in Navy field environments for RF assessment.",
-      tags:     ["Rust", "802.11", "libpcap", "Field Use"],
-      featured: [0, 3],
-      link:     "#",
     },
   ];
 
@@ -741,8 +722,11 @@ function SectionPortfolio({ isActive }) {
 }
 
 function ProjectCard({ proj, delay, inView }) {
+  // Cards only become links once the project has a real URL to point at.
+  const Tag = proj.link ? "a" : "div";
+
   return (
-    <a
+    <Tag
       href={proj.link}
       className="project-card"
       style={{
@@ -765,7 +749,7 @@ function ProjectCard({ proj, delay, inView }) {
           </span>
         ))}
       </div>
-    </a>
+    </Tag>
   );
 }
 
@@ -1013,7 +997,9 @@ export default function App() {
         <>
           <SectionResume    isActive={currentSection === "resume"}    />
           <SectionPortfolio isActive={currentSection === "portfolio"} />
-          <SectionAlbum     isActive={currentSection === "album"}     />
+          {/* SectionAlbum is kept but unmounted until it holds real photos —
+              an opacity-0 panel would still be read out by screen readers.
+              Restore this line and the ALBUM nav entries to bring it back. */}
         </>
       )}
     </div>

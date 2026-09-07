@@ -153,40 +153,20 @@
   margin-bottom: 14px;
 }
 
-.skill-row {
+.skill-tags {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
 }
 
-.skill-label {
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
-  color: var(--c-text);
-  min-width: 88px;
-}
-
-.skill-track {
-  flex: 1;
-  height: 2px;
-  background: rgba(255,255,255,0.06);
-  border-radius: 1px;
-  overflow: hidden;
-}
-
-.skill-fill {
-  height: 100%;
-  border-radius: 1px;
-  transition-property: width;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.skill-pct {
+.skill-tag {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 10px;
-  color: var(--c-text-dim);
-  min-width: 26px;
-  text-align: right;
+  letter-spacing: 0.05em;
+  border: 1px solid var(--c-border);
+  border-radius: 3px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.03);
 }
 
 /* ── Portfolio ── */
