@@ -603,13 +603,18 @@ function SectionResume({ isActive }) {
     {
       period:   ["Aug 2023", "Aug 2021"],
       role:     "Teacher & Website Developer",
-      org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
+      org:      "Step Up for Brockton (Educational Divide Reform) // Brockton, MA",
       bullets: [
         "Taught coding, engineering, mathematics, and art & technology for 45+ students each summer.",
         "Proposed and built a website to aid students and faculty, reducing daily inquiries.",
       ],
       dotColor: C.green,
     },
+  ];
+
+  // Work outside the engineering track — kept separate so the service record
+  // reads as one continuous technical timeline.
+  const otherExperiences = [
     {
       period:   ["May 2024", "Sept 2023"],
       role:     "Student Cook",
@@ -661,44 +666,26 @@ function SectionResume({ isActive }) {
             <div className="timeline-header">// Service Record</div>
             <div className="timeline-list">
               {timeline.map((item, i) => (
-                <div
-                  key={i}
-                  className="timeline-entry"
-                  style={{
-                    paddingBottom: i < timeline.length - 1 ? 36 : 0,
-                    opacity:       inView ? (item.dimmed ? 0.55 : 1) : 0,
-                    transform:     inView ? "translateX(0)" : "translateX(-12px)",
-                    transition:    `opacity 0.6s ease ${i * 0.1}s, transform 0.6s ease ${i * 0.1}s`,
-                  }}
-                >
-                  <div
-                    className="timeline-dot"
-                    style={{ border: `2px solid ${item.dotColor}` }}
-                  />
-                  {/* Date sits in the gutter left of the line: later date on
-                      top, earlier below, so the column stays narrow. */}
-                  <div className="timeline-period">
-                    {item.period.map((line, li) => (
-                      <div
-                        key={line}
-                        // A lone value (no range) is allowed to wrap inside the
-                        // gutter instead of being pinned to one line.
-                        className={`timeline-period-line${
-                          item.period.length === 1 ? " timeline-period-line--solo" : ""
-                        }${li > 0 ? " timeline-period-line--start" : ""}`}
-                      >
-                        {line}
-                      </div>
-                    ))}
-                  </div>
-                  <div className="timeline-role">{item.role}</div>
-                  <div className="timeline-org">{item.org}</div>
-                  <ul className="timeline-bullets">
-                    {item.bullets.map(point => (
-                      <li key={point} className="timeline-bullet">{point}</li>
-                    ))}
-                  </ul>
-                </div>
+                <TimelineEntry
+                  key={item.role}
+                  item={item}
+                  delay={i * 0.1}
+                  inView={inView}
+                  isLast={i === timeline.length - 1}
+                />
+              ))}
+            </div>
+
+            <div className="timeline-header timeline-header--other">// Other Experiences</div>
+            <div className="timeline-list">
+              {otherExperiences.map((item, i) => (
+                <TimelineEntry
+                  key={item.role}
+                  item={item}
+                  delay={(timeline.length + i) * 0.1}
+                  inView={inView}
+                  isLast={i === otherExperiences.length - 1}
+                />
               ))}
             </div>
           </div>
@@ -745,6 +732,50 @@ function SectionResume({ isActive }) {
 
         </div>
       </div>
+    </div>
+  );
+}
+
+// One row of the service record — shared by the main timeline and the
+// "Other Experiences" list below it.
+function TimelineEntry({ item, delay, inView, isLast }) {
+  return (
+    <div
+      className="timeline-entry"
+      style={{
+        paddingBottom: isLast ? 0 : 36,
+        opacity:       inView ? (item.dimmed ? 0.55 : 1) : 0,
+        transform:     inView ? "translateX(0)" : "translateX(-12px)",
+        transition:    `opacity 0.6s ease ${delay}s, transform 0.6s ease ${delay}s`,
+      }}
+    >
+      <div
+        className="timeline-dot"
+        style={{ border: `2px solid ${item.dotColor}` }}
+      />
+      {/* Date sits in the gutter left of the line: later date on top, earlier
+          below, so the column stays narrow. */}
+      <div className="timeline-period">
+        {item.period.map((line, li) => (
+          <div
+            key={line}
+            // A lone value (no range) is allowed to wrap inside the gutter
+            // instead of being pinned to one line.
+            className={`timeline-period-line${
+              item.period.length === 1 ? " timeline-period-line--solo" : ""
+            }${li > 0 ? " timeline-period-line--start" : ""}`}
+          >
+            {line}
+          </div>
+        ))}
+      </div>
+      <div className="timeline-role">{item.role}</div>
+      <div className="timeline-org">{item.org}</div>
+      <ul className="timeline-bullets">
+        {item.bullets.map(point => (
+          <li key={point} className="timeline-bullet">{point}</li>
+        ))}
+      </ul>
     </div>
   );
 }

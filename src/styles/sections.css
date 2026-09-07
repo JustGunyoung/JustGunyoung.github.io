@@ -59,6 +59,7 @@
 .resume-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 12px;
   margin-bottom: 24px;
 }
@@ -96,6 +97,11 @@
   color: var(--c-amber);
   margin-bottom: 28px;
   text-transform: uppercase;
+}
+
+/* Second list heading — needs breathing room from the list above it. */
+.timeline-header--other {
+  margin-top: 48px;
 }
 
 /* margin-left opens the gutter that .timeline-period is absolutely placed
