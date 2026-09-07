@@ -268,6 +268,7 @@ function TopBar({ visible, onNav }) {
   const navLinks = [
     { label: "RESUME",    section: "resume"    },
     { label: "PORTFOLIO", section: "portfolio" },
+    { label: "CONTACTS",  section: "contacts"  },
   ];
 
   return (
@@ -453,8 +454,9 @@ function GlowLetters({ text, baseAngle, angle }) {
 function MainContent({ angle, hidden, onNav }) {
   // Phosphor glow when sweep passes each button's angular position.
   // Buttons use offset angles so each one lights up at a slightly different time.
-  const portfolioBr= sweepBrightness(angle,  Math.PI / 2);       // hits first (right)
-  const resumeBr   = sweepBrightness(angle,  Math.PI / 2 + 1); // hits second (left)
+  const contactsBr = sweepBrightness(angle,  Math.PI / 2 - 1); // hits first (right)
+  const portfolioBr= sweepBrightness(angle,  Math.PI / 2);       // hits second (center)
+  const resumeBr   = sweepBrightness(angle,  Math.PI / 2 + 1); // hits third (left)
 
   return (
     <div
@@ -488,6 +490,9 @@ function MainContent({ angle, hidden, onNav }) {
           </NavButton>
           <NavButton glow={portfolioBr} onClick={() => onNav("portfolio")}>
             ⌥ PORTFOLIO
+          </NavButton>
+          <NavButton glow={contactsBr}  onClick={() => onNav("contacts")}>
+            ✉ CONTACTS
           </NavButton>
           {/* ALBUM button hidden until the album holds real photos. */}
         </div>
@@ -755,6 +760,63 @@ function ProjectCard({ proj, delay, inView }) {
 
 
 // =============================================================================
+// SectionContacts
+// =============================================================================
+function SectionContacts({ isActive }) {
+  const inView = useActiveReveal(isActive);
+
+  // Placeholder values — deliberately non-real until Gunyoung supplies his own.
+  // 555-01xx is the reserved fictional US phone range.
+  const contacts = [
+    { label: "NAME",     value: "Gunyoung Park" },
+    { label: "EMAIL",    value: "sample@example.com",              href: "mailto:sample@example.com" },
+    { label: "PHONE",    value: "+1 (555) 010-0000",               href: "tel:+15550100000" },
+    { label: "LINKEDIN", value: "linkedin.com/in/your-handle",     href: "https://www.linkedin.com/in/your-handle", external: true },
+    { label: "GITHUB",   value: "github.com/your-handle",          href: "https://github.com/your-handle",          external: true },
+  ];
+
+  return (
+    <div
+      className="section-panel"
+      style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
+    >
+      <div className="section-inner">
+        <SectionDivider channel="CH-06" label="UPLINK // CONTACTS" />
+
+        <div className="contact-panel">
+          {contacts.map((item, i) => {
+            // Rows only become links when there is somewhere to go.
+            const Tag = item.href ? "a" : "div";
+
+            return (
+              <div
+                key={item.label}
+                className="contact-row"
+                style={{
+                  opacity:    inView ? 1 : 0,
+                  transform:  inView ? "translateY(0)" : "translateY(8px)",
+                  transition: `opacity 0.6s ease ${i * 0.08}s, transform 0.6s ease ${i * 0.08}s`,
+                }}
+              >
+                <span className="contact-label">{item.label}</span>
+                <Tag
+                  href={item.href}
+                  {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className={`contact-value${item.href ? " contact-value--link" : ""}`}
+                >
+                  {item.value}
+                </Tag>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// =============================================================================
 // SectionAlbum
 // =============================================================================
 function SectionAlbum({ isActive }) {
@@ -997,6 +1059,7 @@ export default function App() {
         <>
           <SectionResume    isActive={currentSection === "resume"}    />
           <SectionPortfolio isActive={currentSection === "portfolio"} />
+          <SectionContacts  isActive={currentSection === "contacts"}  />
           {/* SectionAlbum is kept but unmounted until it holds real photos —
               an opacity-0 panel would still be read out by screen readers.
               Restore this line and the ALBUM nav entries to bring it back. */}

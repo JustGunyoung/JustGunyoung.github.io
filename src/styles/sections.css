@@ -261,6 +261,56 @@
   color: var(--c-green);
 }
 
+/* ── Contacts ── */
+.contact-panel {
+  background: rgba(13,17,23,0.6);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 8px 24px;
+  max-width: 560px;
+}
+
+.contact-row {
+  display: flex;
+  align-items: baseline;
+  gap: 20px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.contact-row:last-child {
+  border-bottom: none;
+}
+
+.contact-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--c-amber);
+  text-transform: uppercase;
+  min-width: 84px;
+  flex-shrink: 0;
+}
+
+.contact-value {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  color: var(--c-text);
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.contact-value--link {
+  color: var(--c-green);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.contact-value--link:hover {
+  border-bottom-color: var(--c-green-dim);
+}
+
 /* ── Album ── */
 .album-grid {
   display: grid;
@@ -349,6 +399,14 @@
   }
   .project-grid {
     grid-template-columns: 1fr;
+  }
+  .contact-panel {
+    padding: 8px 18px;
+  }
+  .contact-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
   }
   .album-grid {
     grid-template-columns: 1fr;
