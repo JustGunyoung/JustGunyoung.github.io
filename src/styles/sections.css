@@ -23,6 +23,11 @@
   padding: 80px 60px 120px;
 }
 
+/* The PDF buttons lead this section, so it starts tight to the top bar. */
+.section-inner--resume {
+  padding-top: 24px;
+}
+
 /* ── Section divider header ── */
 .section-divider {
   display: flex;
@@ -498,6 +503,10 @@
 @media (max-width: 640px) {
   .section-inner {
     padding: 40px 20px;
+  }
+  /* Re-applied after the shorthand above, which would otherwise reset it. */
+  .section-inner--resume {
+    padding-top: 18px;
   }
   .section-inner--album {
     padding: 40px 20px 80px;

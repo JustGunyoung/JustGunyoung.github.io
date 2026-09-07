@@ -1,3 +1,5 @@
+/* height stays fixed at 44px — the larger type below centres inside it
+   rather than growing the bar. */
 .topbar {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -10,7 +12,8 @@
   padding: 0 24px;
   z-index: 60;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 14px;
+  line-height: 1;
   transition: opacity 0.8s ease 0.2s;
 }
 
@@ -26,7 +29,8 @@
   background: none;
   border: none;
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 11px;
+  font-size: 15px;
+  line-height: 1;
   cursor: pointer;
   padding: 0;
   transition: opacity 0.15s;
@@ -43,12 +47,13 @@
 
 .nav-link {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 14px;
+  line-height: 1;
   letter-spacing: 0.12em;
   color: var(--c-text-dim);
   background: transparent;
   border: none;
-  padding: 4px 10px;
+  padding: 5px 10px;
   border-radius: 2px;
   cursor: pointer;
   transition: color 0.15s, background 0.15s;
@@ -95,11 +100,12 @@
   }
   .topbar-logo {
     letter-spacing: 0.08em;
+    font-size: 12px;
   }
   .nav-link {
-    padding: 4px 6px;
-    font-size: 9px;
-    letter-spacing: 0.06em;
+    padding: 4px 5px;
+    font-size: 11px;
+    letter-spacing: 0.04em;
   }
   .nav-button {
     padding: 12px 20px;

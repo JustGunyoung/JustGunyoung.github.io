@@ -631,7 +631,7 @@ function SectionResume({ isActive }) {
       className="section-panel"
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
-      <div className="section-inner">
+      <div className="section-inner section-inner--resume">
         <div
           className="resume-actions"
           style={{
@@ -663,7 +663,7 @@ function SectionResume({ isActive }) {
 
           {/* ── LEFT: Timeline ── */}
           <div>
-            <div className="timeline-header">// Service Record</div>
+            <div className="timeline-header">// Experiences</div>
             <div className="timeline-list">
               {timeline.map((item, i) => (
                 <TimelineEntry
