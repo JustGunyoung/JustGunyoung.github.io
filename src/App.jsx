@@ -561,14 +561,14 @@ function SectionResume({ isActive }) {
 
   const timeline = [
     {
-      period:   "Expected May 2028",
+      period:   ["Expected May 2028"],
       role:     "B.S. Computer Science",
       org:      "Purdue University // West Lafayette, IN",
       bullets:  ["Pursuing a Bachelor's degree in Computer Science."],
       dotColor: C.green,
     },
     {
-      period:   "Sept 2024 – June 2026",
+      period:   ["June 2026", "Sept 2024"],
       role:     "Communications & Network Engineer",
       org:      "Republic of Korea Navy // ROKS Cheongju, Pyeongtaek, Korea",
       bullets: [
@@ -580,7 +580,7 @@ function SectionResume({ isActive }) {
       dotColor: C.amber,
     },
     {
-      period:   "Jan 2024 – May 2024",
+      period:   ["May 2024", "Jan 2024"],
       role:     "Data Scientist/Engineer",
       org:      "ThermoFisher Scientific @ Purdue Data Mine // West Lafayette, IN",
       bullets: [
@@ -591,7 +591,7 @@ function SectionResume({ isActive }) {
       dotColor: C.green,
     },
     {
-      period:   "Sept 2023 – Dec 2023",
+      period:   ["Dec 2023", "Sept 2023"],
       role:     "Data Engineer",
       org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
       bullets: [
@@ -601,7 +601,7 @@ function SectionResume({ isActive }) {
       dotColor: C.amber,
     },
     {
-      period:   "Aug 2021 – Aug 2023",
+      period:   ["Aug 2023", "Aug 2021"],
       role:     "Teacher & Website Developer",
       org:      "Webee @ Purdue Data Mine // West Lafayette, IN",
       bullets: [
@@ -611,7 +611,7 @@ function SectionResume({ isActive }) {
       dotColor: C.green,
     },
     {
-      period:   "Sept 2023 – May 2024",
+      period:   ["May 2024", "Sept 2023"],
       role:     "Student Cook",
       org:      "Purdue Dining & Culinary // West Lafayette, IN",
       bullets: [
@@ -627,8 +627,6 @@ function SectionResume({ isActive }) {
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
       <div className="section-inner">
-        <SectionDivider channel="RESUME" label="MISSION LOGS" />
-
         <div
           className="resume-actions"
           style={{
@@ -654,6 +652,8 @@ function SectionResume({ isActive }) {
           </a>
         </div>
 
+        <SectionDivider channel="RESUME" label="MISSION LOGS" />
+
         <div className="resume-grid">
 
           {/* ── LEFT: Timeline ── */}
@@ -675,7 +675,22 @@ function SectionResume({ isActive }) {
                     className="timeline-dot"
                     style={{ border: `2px solid ${item.dotColor}` }}
                   />
-                  <div className="timeline-period">{item.period}</div>
+                  {/* Date sits in the gutter left of the line: later date on
+                      top, earlier below, so the column stays narrow. */}
+                  <div className="timeline-period">
+                    {item.period.map((line, li) => (
+                      <div
+                        key={line}
+                        // A lone value (no range) is allowed to wrap inside the
+                        // gutter instead of being pinned to one line.
+                        className={`timeline-period-line${
+                          item.period.length === 1 ? " timeline-period-line--solo" : ""
+                        }${li > 0 ? " timeline-period-line--start" : ""}`}
+                      >
+                        {line}
+                      </div>
+                    ))}
+                  </div>
                   <div className="timeline-role">{item.role}</div>
                   <div className="timeline-org">{item.org}</div>
                   <ul className="timeline-bullets">

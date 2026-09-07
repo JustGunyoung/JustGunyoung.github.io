@@ -60,7 +60,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
-  margin-bottom: 36px;
+  margin-bottom: 24px;
 }
 
 .resume-action {
@@ -98,7 +98,10 @@
   text-transform: uppercase;
 }
 
+/* margin-left opens the gutter that .timeline-period is absolutely placed
+   into, left of the border that represents the time axis. */
 .timeline-list {
+  margin-left: 120px;
   padding-left: 28px;
   border-left: 1px solid var(--c-border);
 }
@@ -118,11 +121,29 @@
 }
 
 .timeline-period {
+  position: absolute;
+  top: 4px;
+  left: -144px;
+  width: 96px;
+  text-align: right;
   font-family: 'IBM Plex Mono', monospace;
   font-size: 13px;
   color: var(--c-amber);
   letter-spacing: 0.1em;
-  margin-bottom: 6px;
+}
+
+.timeline-period-line {
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.timeline-period-line--solo {
+  white-space: normal;
+}
+
+/* The earlier date reads as secondary to the later one above it. */
+.timeline-period-line--start {
+  opacity: 0.65;
 }
 
 .timeline-role {
@@ -478,6 +499,23 @@
   .resume-grid {
     grid-template-columns: 1fr;
     gap: 40px;
+  }
+  /* No room for a date gutter on phones — put the dates back in flow, with
+     the two lines side by side above the role. */
+  .timeline-list {
+    margin-left: 0;
+  }
+  .timeline-period {
+    position: static;
+    width: auto;
+    text-align: left;
+    margin-bottom: 6px;
+    display: flex;
+    gap: 6px;
+  }
+  /* Side by side the two dates need a separator to read as one range. */
+  .timeline-period-line--start::before {
+    content: "– ";
   }
   .timeline-role {
     font-size: 20px;
