@@ -520,12 +520,14 @@ function useActiveReveal(isActive) {
 // =============================================================================
 // SectionDivider
 // =============================================================================
+// Title sits centred between two rules; `label` is optional extra caption.
 function SectionDivider({ channel, label }) {
   return (
     <div className="section-divider">
+      <div className="section-rule section-rule--left" />
       <span className="section-channel">{channel}</span>
-      <div className="section-rule" />
-      <span className="section-label-text">{label}</span>
+      {label && <span className="section-label-text">{label}</span>}
+      <div className="section-rule section-rule--right" />
     </div>
   );
 }
@@ -657,13 +659,13 @@ function SectionResume({ isActive }) {
           </a>
         </div>
 
-        <SectionDivider channel="RESUME" label="MISSION LOGS" />
+        <SectionDivider channel="RESUME"/>
 
         <div className="resume-grid">
 
           {/* ── LEFT: Timeline ── */}
           <div>
-            <div className="timeline-header">// Experiences</div>
+            <div className="timeline-header"> Experiences</div>
             <div className="timeline-list">
               {timeline.map((item, i) => (
                 <TimelineEntry
@@ -676,7 +678,7 @@ function SectionResume({ isActive }) {
               ))}
             </div>
 
-            <div className="timeline-header timeline-header--other">// Other Experiences</div>
+            <div className="timeline-header timeline-header--other"> Other Experiences</div>
             <div className="timeline-list">
               {otherExperiences.map((item, i) => (
                 <TimelineEntry
@@ -692,7 +694,7 @@ function SectionResume({ isActive }) {
 
           {/* ── RIGHT: Skills ── */}
           <div className="skills-column">
-            <div className="skills-header">// Capability Matrix</div>
+            <div className="skills-header"> Capability Matrix</div>
             {skillGroups.map((group, gi) => (
               <div
                 key={group.title}
@@ -817,7 +819,7 @@ function SectionPortfolio({ isActive }) {
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
       <div className="section-inner">
-        <SectionDivider channel="Projects" label="Working on P-02" />
+        <SectionDivider channel="Projects" />
 
         <div className="project-grid">
           {projects.map((proj, i) => (
@@ -886,7 +888,7 @@ function SectionContacts({ isActive }) {
       style={{ opacity: isActive ? 1 : 0, pointerEvents: isActive ? "auto" : "none" }}
     >
       <div className="section-inner section-inner--contacts">
-        <SectionDivider channel="CONTACTS" label="CONFIDENTIAL" />
+        <SectionDivider channel="CONTACTS"/>
 
         <div className="contact-center">
           <div className="contact-panel">

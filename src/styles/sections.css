@@ -38,15 +38,24 @@
 
 .section-channel {
   font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px;
+  font-size: 20px;
   letter-spacing: 0.25em;
   color: var(--c-amber);
   white-space: nowrap;
 }
 
+/* Equal flex on both rules keeps the title in the true centre; each gradient
+   fades away from the title. */
 .section-rule {
   flex: 1;
   height: 1px;
+}
+
+.section-rule--left {
+  background: linear-gradient(90deg, transparent, var(--c-border));
+}
+
+.section-rule--right {
   background: linear-gradient(90deg, var(--c-border), transparent);
 }
 
@@ -507,6 +516,11 @@
   /* Re-applied after the shorthand above, which would otherwise reset it. */
   .section-inner--resume {
     padding-top: 18px;
+  }
+  /* Step down so the tracked-out title leaves room for both rules. */
+  .section-channel {
+    font-size: 16px;
+    letter-spacing: 0.18em;
   }
   .section-inner--album {
     padding: 40px 20px 80px;
